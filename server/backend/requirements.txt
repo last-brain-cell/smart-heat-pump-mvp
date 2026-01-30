@@ -10,7 +10,7 @@
 # -----------------------------------------------------------------------------
 # Web Framework
 # -----------------------------------------------------------------------------
-fastapi==0.109.0          # Modern async web framework for building APIs
+fastapi==0.128.0          # Modern async web framework for building APIs
 uvicorn[standard]==0.27.0 # ASGI server for running FastAPI
 
 # -----------------------------------------------------------------------------
@@ -43,6 +43,6 @@ aiofiles==23.2.1          # Async file operations
 # -----------------------------------------------------------------------------
 # Utilities
 # -----------------------------------------------------------------------------
-python-dotenv==1.0.0      # Load environment variables from .env file
-python-dateutil==2.8.2    # Powerful date/time parsing and manipulation
-python-multipart==0.0.6   # Form data parsing (required by FastAPI)
+python-dotenv==1.2.1      # Load environment variables from .env file
+python-dateutil==2.9.0.post0    # Powerful date/time parsing and manipulation
+python-multipart==0.0.22   # Form data parsing (required by FastAPI)

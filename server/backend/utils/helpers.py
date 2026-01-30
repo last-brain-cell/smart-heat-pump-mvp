@@ -8,7 +8,7 @@ Common utility functions used across the application.
 from datetime import datetime, timezone
 from typing import Optional
 
-from core.config import settings
+from server.backend.core.config import settings
 
 
 def is_device_online(last_seen: Optional[datetime]) -> bool:
