@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heat Pump Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Heat Pump Monitor</h1>
+            <div class="header-status">
+                <span id="connection-status" class="status-indicator offline">Disconnected</span>
+                <span id="last-update">Last update: --</span>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="stat-devices">0</div>
+                <div class="stat-label">Devices Online</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-readings">0</div>
+                <div class="stat-label">Total Readings</div>
+            </div>
+            <div class="stat-card alert">
+                <div class="stat-value" id="stat-alerts">0</div>
+                <div class="stat-label">Active Alerts</div>
+            </div>
+        </section>
+
+        <!-- Device Status -->
+        <section class="device-section">
+            <h2>Device Status</h2>
+            <div id="device-list" class="device-grid">
+                <!-- Devices will be populated here -->
+            </div>
+        </section>
+
+        <!-- Sensor Readings -->
+        <section class="readings-section">
+            <h2>Current Readings - <span id="current-device">site1</span></h2>
+
+            <div class="readings-grid">
+                <!-- Temperature Card -->
+                <div class="reading-card">
+                    <h3>Temperatures</h3>
+                    <div class="reading-row">
+                        <span class="label">Inlet</span>
+                        <span class="value" id="temp-inlet">--</span>
+                        <span class="unit">°C</span>
+                    </div>
+                    <div class="reading-row">
+                        <span class="label">Outlet</span>
+                        <span class="value" id="temp-outlet">--</span>
+                        <span class="unit">°C</span>
+                    </div>
+                    <div class="reading-row">
+                        <span class="label">Ambient</span>
+                        <span class="value" id="temp-ambient">--</span>
+                        <span class="unit">°C</span>
+                    </div>
+                    <div class="reading-row">
+                        <span class="label">Compressor</span>
+                        <span class="value" id="temp-compressor">--</span>
+                        <span class="unit">°C</span>
+                    </div>
+                </div>
+
+                <!-- Electrical Card -->
+                <div class="reading-card">
+                    <h3>Electrical</h3>
+                    <div class="reading-row">
+                        <span class="label">Voltage</span>
+                        <span class="value" id="voltage">--</span>
+                        <span class="unit">V</span>
+                    </div>
+                    <div class="reading-row">
+                        <span class="label">Current</span>
+                        <span class="value" id="current">--</span>
+                        <span class="unit">A</span>
+                    </div>
+                    <div class="reading-row large">
+                        <span class="label">Power</span>
+                        <span class="value" id="power">--</span>
+                        <span class="unit">W</span>
+                    </div>
+                </div>
+
+                <!-- Pressure Card -->
+                <div class="reading-card">
+                    <h3>Pressure</h3>
+                    <div class="reading-row">
+                        <span class="label">High Side</span>
+                        <span class="value" id="pressure-high">--</span>
+                        <span class="unit">PSI</span>
+                    </div>
+                    <div class="reading-row">
+                        <span class="label">Low Side</span>
+                        <span class="value" id="pressure-low">--</span>
+                        <span class="unit">PSI</span>
+                    </div>
+                </div>
+
+                <!-- Status Card -->
+                <div class="reading-card">
+                    <h3>System Status</h3>
+                    <div class="status-row">
+                        <span class="label">Compressor</span>
+                        <span class="status-badge" id="status-compressor">OFF</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="label">Fan</span>
+                        <span class="status-badge" id="status-fan">OFF</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="label">Defrost</span>
+                        <span class="status-badge" id="status-defrost">OFF</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alerts Section -->
+        <section class="alerts-section">
+            <h2>Recent Alerts</h2>
+            <div id="alerts-list" class="alerts-list">
+                <p class="no-alerts">No active alerts</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

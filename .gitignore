@@ -1,0 +1,54 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+.env
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Arduino build files
+*.elf
+*.bin
+*.hex
+build/
+
+# Docker
+server/mosquitto/data/*
+server/mosquitto/log/*
+!server/mosquitto/data/.gitkeep
+!server/mosquitto/log/.gitkeep
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log
+
+# Secrets (keep the example)
+server/.env
+!server/.env.example
+
+# Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Node (if dashboard grows)
+node_modules/
