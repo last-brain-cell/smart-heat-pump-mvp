@@ -39,7 +39,7 @@
  * @brief Phone number for SMS alerts (with country code)
  * @note Change this before deployment!
  */
-#define ADMIN_PHONE "+919876543210"
+#define ADMIN_PHONE "+917722087410"
 
 // Validation marker for configuration check
 #define ADMIN_PHONE_PLACEHOLDER "+919876543210"
@@ -58,7 +58,7 @@
 #define MQTT_BROKER "your-server.com"   ///< MQTT broker hostname or IP
 #define MQTT_PORT 1883                   ///< MQTT broker port
 #define MQTT_USER "heatpump"             ///< MQTT username
-#define MQTT_PASS "password"             ///< MQTT password
+#define MQTT_PASS "heatpump123"             ///< MQTT password
 #define MQTT_CLIENT_ID DEVICE_ID         ///< MQTT client identifier
 
 // Validation markers for configuration check
