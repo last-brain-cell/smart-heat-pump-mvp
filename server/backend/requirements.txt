@@ -32,8 +32,8 @@ paho-mqtt==1.6.1          # Eclipse Paho MQTT client for Python
 # -----------------------------------------------------------------------------
 # Data Validation & Settings
 # -----------------------------------------------------------------------------
-pydantic==2.5.3           # Data validation using Python type hints
-pydantic-settings==2.1.0  # Settings management with environment variables
+pydantic==2.12.5           # Data validation using Python type hints
+pydantic-settings==2.12.0  # Settings management with environment variables
 
 # -----------------------------------------------------------------------------
 # Async Support
