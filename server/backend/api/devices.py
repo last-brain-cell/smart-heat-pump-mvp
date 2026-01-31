@@ -10,9 +10,9 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException, Query
 
-from server.backend.core.config import settings
-from server.backend.schemas import DeviceResponse, DeviceStatusResponse, SensorDataResponse
-from server.backend.services import influxdb_service
+from core.config import settings
+from schemas import DeviceResponse, DeviceStatusResponse, SensorDataResponse
+from services import influxdb_service
 
 router = APIRouter()
 

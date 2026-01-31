@@ -8,7 +8,7 @@ Manages WebSocket connections for real-time updates to dashboard clients.
 from typing import List, Dict
 from fastapi import WebSocket
 
-from server.backend.core.logging import get_logger
+from core.logging import get_logger
 
 logger = get_logger(__name__)
 

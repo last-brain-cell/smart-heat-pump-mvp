@@ -9,8 +9,8 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Query
 
-from server.backend.schemas import AlertResponse
-from server.backend.services import influxdb_service
+from schemas import AlertResponse
+from services import influxdb_service
 
 router = APIRouter()
 

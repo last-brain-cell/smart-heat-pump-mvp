@@ -9,8 +9,8 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter
 
-from server.backend.schemas import HealthResponse, StatsResponse
-from server.backend.services import influxdb_service, mqtt_service
+from schemas import HealthResponse, StatsResponse
+from services import influxdb_service, mqtt_service
 
 router = APIRouter()
 

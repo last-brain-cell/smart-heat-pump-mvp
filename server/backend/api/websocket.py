@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from server.backend.services import ws_manager
+from services import ws_manager
 
 router = APIRouter()
 

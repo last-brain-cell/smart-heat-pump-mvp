@@ -16,8 +16,8 @@ from typing import Optional, List, Dict, Any
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-from server.backend.core.config import settings
-from server.backend.core.logging import get_logger
+from core.config import settings
+from core.logging import get_logger
 
 logger = get_logger(__name__)
 
