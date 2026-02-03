@@ -26,7 +26,7 @@ DEFAULT_PASSWORD = "heatpump123"
 DEFAULT_DEVICE_ID = "site1"
 DEFAULT_INTERVAL = 10  # seconds
 
-class   HeatPumpSimulator:
+class HeatPumpSimulator:
     def __init__(self, device_id: str, broker: str, port: int, user: str, password: str):
         self.device_id = device_id
         self.broker = broker
