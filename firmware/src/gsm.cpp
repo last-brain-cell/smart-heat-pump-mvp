@@ -68,7 +68,7 @@ bool initGSM() {
         // Try init instead (faster but less thorough)
         if (!modem.init()) {
             Serial.println(F("[GSM] Failed to initialize modem"));
-            gsmState = GSM_ERROR;
+            gsmState = GSM_STATE_ERROR;
             return false;
         }
     }

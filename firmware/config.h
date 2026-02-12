@@ -53,26 +53,34 @@
 #define GPRS_PASS ""            ///< APN password (usually empty for Indian carriers)
 
 // =============================================================================
+// WIFI SETTINGS (preferred over GPRS when available)
+// =============================================================================
+#define WIFI_SSID "Airtel_Dantales-wifi"        ///< WiFi network name
+#define WIFI_PASS_KEY "9823807410" ///< WiFi password
+#define WIFI_CONNECT_TIMEOUT 10000UL      ///< 10 seconds - WiFi connection timeout
+
+// =============================================================================
 // [REQUIRED] MQTT BROKER SETTINGS
 // =============================================================================
-#define MQTT_BROKER "your-server.com"   ///< MQTT broker hostname or IP
+#define MQTT_BROKER "192.168.1.7"   ///< MQTT broker hostname or IP
 #define MQTT_PORT 1883                   ///< MQTT broker port
 #define MQTT_USER "heatpump"             ///< MQTT username
 #define MQTT_PASS "heatpump123"             ///< MQTT password
 #define MQTT_CLIENT_ID DEVICE_ID         ///< MQTT client identifier
 
 // Validation markers for configuration check
-#define MQTT_BROKER_PLACEHOLDER "your-server.com"
-#define MQTT_PASS_PLACEHOLDER "password"
+#define MQTT_BROKER_PLACEHOLDER "localhost"
+#define MQTT_PASS_PLACEHOLDER "heatpump123"
 
 // =============================================================================
 // TIMING INTERVALS (milliseconds)
 // =============================================================================
 #define SENSOR_READ_INTERVAL    10000UL   ///< 10 seconds - sensor polling
-#define MQTT_PUBLISH_INTERVAL   300000UL  ///< 5 minutes - MQTT data publish
+#define MQTT_PUBLISH_INTERVAL   30000UL  ///< 5 minutes - MQTT data publish
 #define ALERT_COOLDOWN          300000UL  ///< 5 minutes - between same alerts
 #define SMS_CHECK_INTERVAL      5000UL    ///< 5 seconds - check for SMS
 #define GPRS_RETRY_INTERVAL     60000UL   ///< 1 minute - between GPRS retries
+#define WIFI_RETRY_INTERVAL     60000UL   ///< 1 minute - between WiFi retries
 #define NETWORK_TIMEOUT         60000UL   ///< 1 minute - wait for network
 #define WATCHDOG_TIMEOUT_S      30        ///< 30 seconds - watchdog timeout
 
@@ -190,7 +198,7 @@
 // MESSAGE BUFFER SIZES
 // =============================================================================
 #define SMS_BUFFER_SIZE     160   ///< Max SMS message length
-#define JSON_BUFFER_SIZE    512   ///< JSON payload buffer size
+#define JSON_BUFFER_SIZE    1024  ///< JSON payload buffer size
 #define STATUS_BUFFER_SIZE  256   ///< Status message buffer size
 
 #endif // CONFIG_H

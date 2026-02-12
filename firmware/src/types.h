@@ -55,7 +55,16 @@ enum GSMState {
     GSM_READY,
     GSM_CONNECTING_GPRS,
     GSM_GPRS_CONNECTED,
-    GSM_ERROR
+    GSM_STATE_ERROR
+};
+
+/**
+ * @brief Active MQTT transport type
+ */
+enum ConnectionType {
+    CONN_NONE = 0,
+    CONN_WIFI,
+    CONN_GPRS
 };
 
 // =============================================================================

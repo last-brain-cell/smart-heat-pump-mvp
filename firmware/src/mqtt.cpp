@@ -28,8 +28,8 @@ static size_t buildTopic(const char* suffix, char* buffer, size_t bufferSize) {
 // =============================================================================
 
 bool connectMQTT() {
-    if (!isGPRSConnected()) {
-        Serial.println(F("[MQTT] No GPRS connection"));
+    if (activeConnection == CONN_NONE) {
+        Serial.println(F("[MQTT] No network connection"));
         return false;
     }
 

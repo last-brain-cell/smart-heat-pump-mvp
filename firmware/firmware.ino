@@ -56,6 +56,8 @@ PubSubClient mqtt(gsmClient);
 SystemData currentData;
 bool networkReady = false;
 bool startupComplete = false;
+WiFiClient wifiClient;
+ConnectionType activeConnection = CONN_NONE;
 
 // =============================================================================
 // TIMING STATE
@@ -65,6 +67,7 @@ static unsigned long lastSensorRead = 0;
 static unsigned long lastMQTTPublish = 0;
 static unsigned long lastSMSCheck = 0;
 static unsigned long lastGPRSAttempt = 0;
+static unsigned long lastWiFiAttempt = 0;
 static unsigned long lastBlink = 0;
 
 // =============================================================================
@@ -77,6 +80,9 @@ static void handleStatusCommand(const String& sender);
 static void handleResetCommand();
 static void blinkLED(int times, int duration);
 static void printStartupBanner();
+static bool connectWiFi();
+static bool isWiFiConnected();
+static void ensureMQTTTransport(unsigned long currentMillis);
 
 // =============================================================================
 // CONFIGURATION VALIDATION
@@ -153,7 +159,7 @@ void setup() {
         .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
         .trigger_panic = true
     };
-    esp_task_wdt_init(&wdtConfig);
+    esp_task_wdt_reconfigure(&wdtConfig);
 #else
     // ESP32 Arduino Core 2.x uses legacy API
     esp_task_wdt_init(WATCHDOG_TIMEOUT_S, true);
@@ -173,6 +179,7 @@ void setup() {
     initAlerts();
 
     // Initialize GSM module
+    esp_task_wdt_reset();  // Reset watchdog before long-blocking GSM init
     Serial.println(F("\n--- GSM Initialization ---"));
     if (initGSM()) {
         if (waitForNetwork()) {
@@ -193,6 +200,17 @@ void setup() {
             sendSMS(ADMIN_PHONE, startupMsg);
             deleteAllSMS();
         }
+    }
+
+    // Attempt WiFi connection
+    esp_task_wdt_reset();  // Reset watchdog before long-blocking WiFi init
+    Serial.println(F("\n--- WiFi Initialization ---"));
+    if (connectWiFi()) {
+        activeConnection = CONN_WIFI;
+        mqtt.setClient(wifiClient);
+        Serial.println(F("[WIFI] Will use WiFi for MQTT"));
+    } else {
+        Serial.println(F("[WIFI] Not available, will use GPRS for MQTT"));
     }
 
     // Configure MQTT
@@ -266,31 +284,122 @@ void loop() {
 
         Serial.println(F("\n[MAIN] MQTT publish cycle..."));
 
-        if (networkReady) {
-            if (!isGPRSConnected()) {
-                if (currentMillis - lastGPRSAttempt >= GPRS_RETRY_INTERVAL) {
-                    lastGPRSAttempt = currentMillis;
-                    connectGPRS();
-                }
-            }
+        ensureMQTTTransport(currentMillis);
 
-            if (isGPRSConnected()) {
-                if (connectMQTT()) {
-                    publishBufferedData();
-                }
+        if (activeConnection != CONN_NONE) {
+            if (connectMQTT()) {
+                publishBufferedData();
             }
         } else {
-            Serial.println(F("[MAIN] No network - skipping MQTT"));
+            Serial.println(F("[MAIN] No transport available - skipping MQTT"));
         }
     }
 
     // =========================================================
     // TASK 4: Maintain MQTT connection
     // =========================================================
+    if (activeConnection == CONN_WIFI && !isWiFiConnected()) {
+        Serial.println(F("[MAIN] WiFi dropped, resetting MQTT transport"));
+        disconnectMQTT();
+        activeConnection = CONN_NONE;
+    } else if (activeConnection == CONN_GPRS && !isGPRSConnected()) {
+        Serial.println(F("[MAIN] GPRS dropped, resetting MQTT transport"));
+        disconnectMQTT();
+        activeConnection = CONN_NONE;
+    }
     mqttLoop();
 
     // Small delay to prevent watchdog issues and reduce power
     delay(10);
+}
+
+// =============================================================================
+// WIFI HELPERS
+// =============================================================================
+
+static bool connectWiFi() {
+    Serial.print(F("[WIFI] Connecting to "));
+    Serial.println(WIFI_SSID);
+
+    WiFi.begin(WIFI_SSID, WIFI_PASS_KEY);
+
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT) {
+        delay(250);
+        Serial.print(F("."));
+    }
+    Serial.println();
+
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.print(F("[WIFI] Connected, IP: "));
+        Serial.println(WiFi.localIP());
+        return true;
+    }
+
+    Serial.println(F("[WIFI] Connection failed"));
+    WiFi.disconnect(true);
+    return false;
+}
+
+static bool isWiFiConnected() {
+    return WiFi.status() == WL_CONNECTED;
+}
+
+/**
+ * @brief Ensure an MQTT transport is active (WiFi preferred, GPRS fallback)
+ *
+ * Tries WiFi first. If WiFi is unavailable, falls back to GPRS.
+ * Calls mqtt.setClient() with the appropriate client and sets activeConnection.
+ */
+static void ensureMQTTTransport(unsigned long currentMillis) {
+    // Try WiFi first (always preferred)
+    if (isWiFiConnected()) {
+        if (activeConnection != CONN_WIFI) {
+            Serial.println(F("[MAIN] Switching MQTT transport to WiFi"));
+            disconnectMQTT();
+            mqtt.setClient(wifiClient);
+            activeConnection = CONN_WIFI;
+        }
+        return;
+    }
+
+    // WiFi not connected — attempt reconnect if retry interval passed
+    if (currentMillis - lastWiFiAttempt >= WIFI_RETRY_INTERVAL) {
+        lastWiFiAttempt = currentMillis;
+        if (connectWiFi()) {
+            Serial.println(F("[MAIN] Switching MQTT transport to WiFi"));
+            disconnectMQTT();
+            mqtt.setClient(wifiClient);
+            activeConnection = CONN_WIFI;
+            return;
+        }
+    }
+
+    // Fall back to GPRS
+    if (isGPRSConnected()) {
+        if (activeConnection != CONN_GPRS) {
+            Serial.println(F("[MAIN] Switching MQTT transport to GPRS"));
+            disconnectMQTT();
+            mqtt.setClient(gsmClient);
+            activeConnection = CONN_GPRS;
+        }
+        return;
+    }
+
+    // GPRS not connected — attempt reconnect if retry interval passed
+    if (currentMillis - lastGPRSAttempt >= GPRS_RETRY_INTERVAL) {
+        lastGPRSAttempt = currentMillis;
+        if (connectGPRS()) {
+            Serial.println(F("[MAIN] Switching MQTT transport to GPRS"));
+            disconnectMQTT();
+            mqtt.setClient(gsmClient);
+            activeConnection = CONN_GPRS;
+            return;
+        }
+    }
+
+    // Neither transport available
+    activeConnection = CONN_NONE;
 }
 
 // =============================================================================

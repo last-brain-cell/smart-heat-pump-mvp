@@ -16,6 +16,7 @@
 #define TINY_GSM_MODEM_SIM800
 #define TINY_GSM_RX_BUFFER 256
 
+#include <WiFi.h>
 #include <TinyGsmClient.h>
 #include <PubSubClient.h>
 
@@ -45,5 +46,11 @@ extern bool networkReady;
 
 /** @brief Startup sequence completion flag */
 extern bool startupComplete;
+
+/** @brief WiFi client for TCP/IP connections over WiFi */
+extern WiFiClient wifiClient;
+
+/** @brief Currently active MQTT transport */
+extern ConnectionType activeConnection;
 
 #endif // GLOBALS_H
