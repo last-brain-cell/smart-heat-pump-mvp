@@ -4,6 +4,7 @@
  */
 
 #include "alerts.h"
+#include "globals.h"
 #include "gsm.h"
 
 // =============================================================================
@@ -21,7 +22,7 @@ void initAlerts() {
         alertCooldowns.lastAlertTime[i] = 0;
         alertCooldowns.alertActive[i] = false;
     }
-    Serial.println(F("[ALERTS] Initialized"));
+    Log.println(F("[ALERTS] Initialized"));
 }
 
 AlertLevel checkVoltage(float voltage, bool* isHigh) {
@@ -113,8 +114,8 @@ void recordAlertSent(AlertType type) {
     alertCooldowns.lastAlertTime[type] = millis();
     alertCooldowns.alertActive[type] = true;
 
-    Serial.print(F("[ALERTS] Alert recorded: "));
-    Serial.println(getAlertTypeName(type));
+    Log.print(F("[ALERTS] Alert recorded: "));
+    Log.println(getAlertTypeName(type));
 }
 
 void resetAlertCooldown(AlertType type) {
@@ -124,8 +125,8 @@ void resetAlertCooldown(AlertType type) {
 
     if (alertCooldowns.alertActive[type]) {
         alertCooldowns.alertActive[type] = false;
-        Serial.print(F("[ALERTS] Alert cleared: "));
-        Serial.println(getAlertTypeName(type));
+        Log.print(F("[ALERTS] Alert cleared: "));
+        Log.println(getAlertTypeName(type));
     }
 }
 

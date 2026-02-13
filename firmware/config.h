@@ -30,7 +30,7 @@
  * @brief Enable simulated sensor values for testing without hardware
  * Set to false for production deployment with real sensors
  */
-#define SIMULATION_MODE true
+#define SIMULATION_MODE false
 
 // =============================================================================
 // [REQUIRED] ADMIN PHONE NUMBER
@@ -53,14 +53,14 @@
 #define GPRS_PASS ""            ///< APN password (usually empty for Indian carriers)
 
 // =============================================================================
-// WIFI SETTINGS (preferred over GPRS when available)
+// WIFI SETTINGS — compile-time defaults, overridden by portal config in NVS
 // =============================================================================
 #define WIFI_SSID "Airtel_Dantales-wifi"        ///< WiFi network name
 #define WIFI_PASS_KEY "9823807410" ///< WiFi password
 #define WIFI_CONNECT_TIMEOUT 10000UL      ///< 10 seconds - WiFi connection timeout
 
 // =============================================================================
-// [REQUIRED] MQTT BROKER SETTINGS
+// MQTT BROKER SETTINGS — compile-time defaults, overridden by portal config in NVS
 // =============================================================================
 #define MQTT_BROKER "192.168.1.7"   ///< MQTT broker hostname or IP
 #define MQTT_PORT 1883                   ///< MQTT broker port
@@ -76,7 +76,7 @@
 // TIMING INTERVALS (milliseconds)
 // =============================================================================
 #define SENSOR_READ_INTERVAL    10000UL   ///< 10 seconds - sensor polling
-#define MQTT_PUBLISH_INTERVAL   30000UL  ///< 5 minutes - MQTT data publish
+#define MQTT_PUBLISH_INTERVAL   10000UL  ///< 10 seconds - MQTT data publish (INCREASE LATER: REDUCED FOR PROTOTYPE)
 #define ALERT_COOLDOWN          300000UL  ///< 5 minutes - between same alerts
 #define SMS_CHECK_INTERVAL      5000UL    ///< 5 seconds - check for SMS
 #define GPRS_RETRY_INTERVAL     60000UL   ///< 1 minute - between GPRS retries

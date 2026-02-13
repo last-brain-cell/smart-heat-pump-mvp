@@ -29,21 +29,21 @@ static size_t buildTopic(const char* suffix, char* buffer, size_t bufferSize) {
 
 bool connectMQTT() {
     if (activeConnection == CONN_NONE) {
-        Serial.println(F("[MQTT] No network connection"));
+        Log.println(F("[MQTT] No network connection"));
         return false;
     }
 
     if (mqtt.connected()) {
-        Serial.println(F("[MQTT] Already connected"));
+        Log.println(F("[MQTT] Already connected"));
         return true;
     }
 
-    Serial.print(F("[MQTT] Connecting to "));
-    Serial.print(MQTT_BROKER);
-    Serial.print(F(":"));
-    Serial.println(MQTT_PORT);
+    Log.print(F("[MQTT] Connecting to "));
+    Log.print(runtimeCfg.mqttHost);
+    Log.print(F(":"));
+    Log.println(runtimeCfg.mqttPort);
 
-    mqtt.setServer(MQTT_BROKER, MQTT_PORT);
+    mqtt.setServer(runtimeCfg.mqttHost, runtimeCfg.mqttPort);
     mqtt.setCallback(mqttCallback);
 
     // Build last will topic
@@ -52,8 +52,8 @@ bool connectMQTT() {
 
     bool connected = mqtt.connect(
         MQTT_CLIENT_ID,
-        MQTT_USER,
-        MQTT_PASS,
+        runtimeCfg.mqttUser,
+        runtimeCfg.mqttPass,
         willTopic,
         1,      // QoS
         true,   // Retain
@@ -61,7 +61,7 @@ bool connectMQTT() {
     );
 
     if (connected) {
-        Serial.println(F("[MQTT] Connected!"));
+        Log.println(F("[MQTT] Connected!"));
 
         // Publish online status
         publishStatus(true);
@@ -74,8 +74,8 @@ bool connectMQTT() {
         return true;
     }
 
-    Serial.print(F("[MQTT] Connection failed, rc="));
-    Serial.println(mqtt.state());
+    Log.print(F("[MQTT] Connection failed, rc="));
+    Log.println(mqtt.state());
     return false;
 }
 
@@ -83,7 +83,7 @@ void disconnectMQTT() {
     if (mqtt.connected()) {
         publishStatus(false);
         mqtt.disconnect();
-        Serial.println(F("[MQTT] Disconnected"));
+        Log.println(F("[MQTT] Disconnected"));
     }
 }
 
@@ -152,7 +152,7 @@ size_t buildJsonPayload(const SystemData& data, char* buffer, size_t bufferSize)
 
 bool publishSensorData(const SystemData& data) {
     if (!mqtt.connected()) {
-        Serial.println(F("[MQTT] Not connected, cannot publish"));
+        Log.println(F("[MQTT] Not connected, cannot publish"));
         return false;
     }
 
@@ -162,15 +162,15 @@ bool publishSensorData(const SystemData& data) {
     buildTopic("/data", topic, sizeof(topic));
     buildJsonPayload(data, payload, sizeof(payload));
 
-    Serial.print(F("[MQTT] Publishing to "));
-    Serial.println(topic);
+    Log.print(F("[MQTT] Publishing to "));
+    Log.println(topic);
 
     bool success = mqtt.publish(topic, payload);
 
     if (success) {
-        Serial.println(F("[MQTT] Published successfully"));
+        Log.println(F("[MQTT] Published successfully"));
     } else {
-        Serial.println(F("[MQTT] Publish failed!"));
+        Log.println(F("[MQTT] Publish failed!"));
     }
 
     return success;
@@ -178,19 +178,19 @@ bool publishSensorData(const SystemData& data) {
 
 bool publishBufferedData() {
     if (!mqtt.connected()) {
-        Serial.println(F("[MQTT] Not connected, cannot publish buffer"));
+        Log.println(F("[MQTT] Not connected, cannot publish buffer"));
         return false;
     }
 
     uint16_t count = bufferCount();
     if (count == 0) {
-        Serial.println(F("[MQTT] Buffer empty, nothing to publish"));
+        Log.println(F("[MQTT] Buffer empty, nothing to publish"));
         return true;
     }
 
-    Serial.print(F("[MQTT] Publishing "));
-    Serial.print(count);
-    Serial.println(F(" buffered readings..."));
+    Log.print(F("[MQTT] Publishing "));
+    Log.print(count);
+    Log.println(F(" buffered readings..."));
 
     uint16_t published = 0;
     uint16_t failed = 0;
@@ -217,17 +217,17 @@ bool publishBufferedData() {
         delay(100);
     }
 
-    Serial.print(F("[MQTT] Published: "));
-    Serial.print(published);
-    Serial.print(F(", Failed: "));
-    Serial.println(failed);
+    Log.print(F("[MQTT] Published: "));
+    Log.print(published);
+    Log.print(F(", Failed: "));
+    Log.println(failed);
 
     return (failed == 0);
 }
 
 void mqttCallback(char* topic, byte* payload, unsigned int length) {
-    Serial.print(F("[MQTT] Message received on topic: "));
-    Serial.println(topic);
+    Log.print(F("[MQTT] Message received on topic: "));
+    Log.println(topic);
 
     // Convert payload to null-terminated string
     char message[128];
@@ -235,8 +235,8 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
     memcpy(message, payload, copyLen);
     message[copyLen] = '\0';
 
-    Serial.print(F("[MQTT] Payload: "));
-    Serial.println(message);
+    Log.print(F("[MQTT] Payload: "));
+    Log.println(message);
 
     // Parse JSON command if present
     StaticJsonDocument<128> doc;
@@ -244,8 +244,8 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
     if (!error && doc.containsKey("command")) {
         const char* command = doc["command"];
-        Serial.print(F("[MQTT] Command: "));
-        Serial.println(command);
+        Log.print(F("[MQTT] Command: "));
+        Log.println(command);
         // Future: handle MQTT commands here
     }
 }

@@ -4,6 +4,7 @@
  */
 
 #include "buffer.h"
+#include "globals.h"
 
 // =============================================================================
 // PRIVATE DATA
@@ -21,8 +22,8 @@ void initBuffer() {
     dataBuffer.count = 0;
     dataBuffer.overflow = false;
 
-    Serial.print(F("[BUFFER] Initialized, capacity: "));
-    Serial.println(BUFFER_SIZE);
+    Log.print(F("[BUFFER] Initialized, capacity: "));
+    Log.println(BUFFER_SIZE);
 }
 
 bool bufferData(const SystemData& data) {
@@ -31,7 +32,7 @@ bool bufferData(const SystemData& data) {
         dataBuffer.overflow = true;
         dataBuffer.tail = (dataBuffer.tail + 1) % BUFFER_SIZE;
         dataBuffer.count--;
-        Serial.println(F("[BUFFER] Overflow - oldest data overwritten"));
+        Log.println(F("[BUFFER] Overflow - oldest data overwritten"));
     }
 
     // Add new data at head position
@@ -69,7 +70,7 @@ void clearBuffer() {
     dataBuffer.tail = 0;
     dataBuffer.count = 0;
     dataBuffer.overflow = false;
-    Serial.println(F("[BUFFER] Cleared"));
+    Log.println(F("[BUFFER] Cleared"));
 }
 
 bool isBufferFull() {
@@ -94,16 +95,16 @@ size_t getBufferStatus(char* buffer, size_t bufferSize) {
 }
 
 void printBufferStatus() {
-    Serial.print(F("[BUFFER] Count: "));
-    Serial.print(dataBuffer.count);
-    Serial.print(F("/"));
-    Serial.print(BUFFER_SIZE);
-    Serial.print(F(" | Head: "));
-    Serial.print(dataBuffer.head);
-    Serial.print(F(" | Tail: "));
-    Serial.print(dataBuffer.tail);
+    Log.print(F("[BUFFER] Count: "));
+    Log.print(dataBuffer.count);
+    Log.print(F("/"));
+    Log.print(BUFFER_SIZE);
+    Log.print(F(" | Head: "));
+    Log.print(dataBuffer.head);
+    Log.print(F(" | Tail: "));
+    Log.print(dataBuffer.tail);
     if (dataBuffer.overflow) {
-        Serial.print(F(" | OVERFLOW!"));
+        Log.print(F(" | OVERFLOW!"));
     }
-    Serial.println();
+    Log.println();
 }

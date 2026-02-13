@@ -4,6 +4,7 @@
  */
 
 #include "sensors.h"
+#include "globals.h"
 #include <math.h>
 
 // =============================================================================
@@ -29,7 +30,7 @@ void initSensors() {
     pinMode(PIN_STATUS_LED, OUTPUT);
     digitalWrite(PIN_STATUS_LED, LOW);
 
-    Serial.println(F("[SENSORS] Initialized"));
+    Log.println(F("[SENSORS] Initialized"));
 }
 
 bool isValidReading(float value, float minValid, float maxValid) {
@@ -246,50 +247,50 @@ float readPressure(int pin) {
 }
 
 void printSensorData(const SystemData& data) {
-    Serial.println(F("========== SENSOR READINGS =========="));
-    Serial.print(F("Time: "));
-    Serial.println(data.readingTime);
+    Log.println(F("========== SENSOR READINGS =========="));
+    Log.print(F("Time: "));
+    Log.println(data.readingTime);
 
-    Serial.println(F("--- Temperatures (C) ---"));
-    Serial.print(F("  Inlet:      "));
-    Serial.print(data.tempInlet.value, 1);
-    Serial.println(data.tempInlet.valid ? "" : " [INVALID]");
+    Log.println(F("--- Temperatures (C) ---"));
+    Log.print(F("  Inlet:      "));
+    Log.print(data.tempInlet.value, 1);
+    Log.println(data.tempInlet.valid ? "" : " [INVALID]");
 
-    Serial.print(F("  Outlet:     "));
-    Serial.print(data.tempOutlet.value, 1);
-    Serial.println(data.tempOutlet.valid ? "" : " [INVALID]");
+    Log.print(F("  Outlet:     "));
+    Log.print(data.tempOutlet.value, 1);
+    Log.println(data.tempOutlet.valid ? "" : " [INVALID]");
 
-    Serial.print(F("  Ambient:    "));
-    Serial.print(data.tempAmbient.value, 1);
-    Serial.println(data.tempAmbient.valid ? "" : " [INVALID]");
+    Log.print(F("  Ambient:    "));
+    Log.print(data.tempAmbient.value, 1);
+    Log.println(data.tempAmbient.valid ? "" : " [INVALID]");
 
-    Serial.print(F("  Compressor: "));
-    Serial.print(data.tempCompressor.value, 1);
-    Serial.println(data.tempCompressor.valid ? "" : " [INVALID]");
+    Log.print(F("  Compressor: "));
+    Log.print(data.tempCompressor.value, 1);
+    Log.println(data.tempCompressor.valid ? "" : " [INVALID]");
 
-    Serial.println(F("--- Electrical ---"));
-    Serial.print(F("  Voltage: "));
-    Serial.print(data.voltage.value, 1);
-    Serial.println(F(" V"));
+    Log.println(F("--- Electrical ---"));
+    Log.print(F("  Voltage: "));
+    Log.print(data.voltage.value, 1);
+    Log.println(F(" V"));
 
-    Serial.print(F("  Current: "));
-    Serial.print(data.current.value, 2);
-    Serial.println(F(" A"));
+    Log.print(F("  Current: "));
+    Log.print(data.current.value, 2);
+    Log.println(F(" A"));
 
-    Serial.print(F("  Power:   "));
-    Serial.print(data.power, 0);
-    Serial.println(F(" W"));
+    Log.print(F("  Power:   "));
+    Log.print(data.power, 0);
+    Log.println(F(" W"));
 
-    Serial.println(F("--- Pressure (PSI) ---"));
-    Serial.print(F("  High: "));
-    Serial.println(data.pressureHigh.value, 0);
+    Log.println(F("--- Pressure (PSI) ---"));
+    Log.print(F("  High: "));
+    Log.println(data.pressureHigh.value, 0);
 
-    Serial.print(F("  Low:  "));
-    Serial.println(data.pressureLow.value, 0);
+    Log.print(F("  Low:  "));
+    Log.println(data.pressureLow.value, 0);
 
-    Serial.println(F("--- Status ---"));
-    Serial.print(F("  Compressor: "));
-    Serial.println(data.compressorRunning ? "ON" : "OFF");
+    Log.println(F("--- Status ---"));
+    Log.print(F("  Compressor: "));
+    Log.println(data.compressorRunning ? "ON" : "OFF");
 
-    Serial.println(F("====================================="));
+    Log.println(F("====================================="));
 }

@@ -21,6 +21,8 @@
 #include <PubSubClient.h>
 
 #include "types.h"
+#include "provision.h"
+#include "log_capture.h"
 
 // =============================================================================
 // GLOBAL OBJECT DECLARATIONS
@@ -52,5 +54,11 @@ extern WiFiClient wifiClient;
 
 /** @brief Currently active MQTT transport */
 extern ConnectionType activeConnection;
+
+/** @brief Runtime configuration (WiFi/MQTT from NVS or config.h defaults) */
+extern RuntimeConfig runtimeCfg;
+
+/** @brief Global log capture (tees Serial to ring buffer for web viewer) */
+extern LogCapture Log;
 
 #endif // GLOBALS_H

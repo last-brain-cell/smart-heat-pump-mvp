@@ -44,11 +44,14 @@
 #include "src/alerts.h"
 #include "src/buffer.h"
 #include "src/mqtt.h"
+#include "src/provision.h"
+#include "src/dashboard.h"
 
 // =============================================================================
 // GLOBAL OBJECT DEFINITIONS
 // =============================================================================
 
+LogCapture Log(Serial);
 TinyGsm modem(Serial2);
 TinyGsmClient gsmClient(modem);
 GSMState gsmState = GSM_UNINITIALIZED;
@@ -58,6 +61,7 @@ bool networkReady = false;
 bool startupComplete = false;
 WiFiClient wifiClient;
 ConnectionType activeConnection = CONN_NONE;
+RuntimeConfig runtimeCfg;
 
 // =============================================================================
 // TIMING STATE
@@ -83,6 +87,7 @@ static void printStartupBanner();
 static bool connectWiFi();
 static bool isWiFiConnected();
 static void ensureMQTTTransport(unsigned long currentMillis);
+static void handleWiFiResetCommand(const String& sender);
 
 // =============================================================================
 // CONFIGURATION VALIDATION
@@ -93,28 +98,28 @@ static void ensureMQTTTransport(unsigned long currentMillis);
  * Warns on serial if required configuration hasn't been changed
  */
 static void validateConfiguration() {
-    Serial.println(F("\n--- Configuration Validation ---"));
+    Log.println(F("\n--- Configuration Validation ---"));
     bool hasWarnings = false;
 
     if (strcmp(ADMIN_PHONE, ADMIN_PHONE_PLACEHOLDER) == 0) {
-        Serial.println(F("WARNING: ADMIN_PHONE is still placeholder value!"));
+        Log.println(F("WARNING: ADMIN_PHONE is still placeholder value!"));
         hasWarnings = true;
     }
 
     if (strcmp(MQTT_BROKER, MQTT_BROKER_PLACEHOLDER) == 0) {
-        Serial.println(F("WARNING: MQTT_BROKER is still placeholder value!"));
+        Log.println(F("WARNING: MQTT_BROKER is still placeholder value!"));
         hasWarnings = true;
     }
 
     if (strcmp(MQTT_PASS, MQTT_PASS_PLACEHOLDER) == 0) {
-        Serial.println(F("WARNING: MQTT_PASS is still placeholder value!"));
+        Log.println(F("WARNING: MQTT_PASS is still placeholder value!"));
         hasWarnings = true;
     }
 
     if (hasWarnings) {
-        Serial.println(F("Please update config.h before deployment."));
+        Log.println(F("Please update config.h before deployment."));
     } else {
-        Serial.println(F("Configuration OK"));
+        Log.println(F("Configuration OK"));
     }
 }
 
@@ -123,19 +128,19 @@ static void validateConfiguration() {
 // =============================================================================
 
 static void printStartupBanner() {
-    Serial.println();
-    Serial.println(F("====================================="));
-    Serial.println(F("  Smart Heat Pump Monitor"));
-    Serial.print(F("  Version: "));
-    Serial.println(FIRMWARE_VERSION);
-    Serial.println(F("====================================="));
-    Serial.print(F("Device ID: "));
-    Serial.println(DEVICE_ID);
-    Serial.print(F("Mode: "));
-    Serial.println(SIMULATION_MODE ? "Simulation" : "Live");
-    Serial.print(F("Free Heap: "));
-    Serial.print(ESP.getFreeHeap());
-    Serial.println(F(" bytes"));
+    Log.println();
+    Log.println(F("====================================="));
+    Log.println(F("  Smart Heat Pump Monitor"));
+    Log.print(F("  Version: "));
+    Log.println(FIRMWARE_VERSION);
+    Log.println(F("====================================="));
+    Log.print(F("Device ID: "));
+    Log.println(DEVICE_ID);
+    Log.print(F("Mode: "));
+    Log.println(SIMULATION_MODE ? "Simulation" : "Live");
+    Log.print(F("Free Heap: "));
+    Log.print(ESP.getFreeHeap());
+    Log.println(F(" bytes"));
 }
 
 // =============================================================================
@@ -144,14 +149,14 @@ static void printStartupBanner() {
 
 void setup() {
     // Initialize Serial for debugging
-    Serial.begin(115200);
+    Log.begin(115200);
     delay(1000);
 
     printStartupBanner();
     validateConfiguration();
 
     // Initialize watchdog timer
-    Serial.println(F("\n--- Watchdog Timer ---"));
+    Log.println(F("\n--- Watchdog Timer ---"));
 #if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
     // ESP32 Arduino Core 3.x uses new config struct API
     esp_task_wdt_config_t wdtConfig = {
@@ -165,9 +170,9 @@ void setup() {
     esp_task_wdt_init(WATCHDOG_TIMEOUT_S, true);
 #endif
     esp_task_wdt_add(NULL);  // Add current task to watchdog
-    Serial.print(F("Watchdog enabled: "));
-    Serial.print(WATCHDOG_TIMEOUT_S);
-    Serial.println(F("s timeout"));
+    Log.print(F("Watchdog enabled: "));
+    Log.print(WATCHDOG_TIMEOUT_S);
+    Log.println(F("s timeout"));
 
     // Initialize status LED
     pinMode(PIN_STATUS_LED, OUTPUT);
@@ -180,7 +185,7 @@ void setup() {
 
     // Initialize GSM module
     esp_task_wdt_reset();  // Reset watchdog before long-blocking GSM init
-    Serial.println(F("\n--- GSM Initialization ---"));
+    Log.println(F("\n--- GSM Initialization ---"));
     if (initGSM()) {
         if (waitForNetwork()) {
             networkReady = true;
@@ -202,25 +207,45 @@ void setup() {
         }
     }
 
+    // Load runtime config from NVS (falls back to config.h defaults)
+    esp_task_wdt_reset();
+    Log.println(F("\n--- Provisioning ---"));
+    loadConfig(runtimeCfg);
+
+    if (!isProvisioned()) {
+        startProvisioningPortal(runtimeCfg);
+    }
+
     // Attempt WiFi connection
     esp_task_wdt_reset();  // Reset watchdog before long-blocking WiFi init
-    Serial.println(F("\n--- WiFi Initialization ---"));
+    Log.println(F("\n--- WiFi Initialization ---"));
     if (connectWiFi()) {
         activeConnection = CONN_WIFI;
         mqtt.setClient(wifiClient);
-        Serial.println(F("[WIFI] Will use WiFi for MQTT"));
+        Log.println(F("[WIFI] Will use WiFi for MQTT"));
+        initDashboard();
     } else {
-        Serial.println(F("[WIFI] Not available, will use GPRS for MQTT"));
+        Log.println(F("[WIFI] Not available, re-launching portal for credential fix"));
+        startProvisioningPortal(runtimeCfg);
+        esp_task_wdt_reset();
+        if (connectWiFi()) {
+            activeConnection = CONN_WIFI;
+            mqtt.setClient(wifiClient);
+            Log.println(F("[WIFI] Connected after portal, will use WiFi for MQTT"));
+            initDashboard();
+        } else {
+            Log.println(F("[WIFI] Still not available, will use GPRS for MQTT"));
+        }
     }
 
     // Configure MQTT
-    mqtt.setServer(MQTT_BROKER, MQTT_PORT);
+    mqtt.setServer(runtimeCfg.mqttHost, runtimeCfg.mqttPort);
     mqtt.setCallback(mqttCallback);
     mqtt.setKeepAlive(60);
     mqtt.setBufferSize(JSON_BUFFER_SIZE);
 
-    Serial.println(F("\n--- Initialization Complete ---"));
-    Serial.println(F("Starting main loop...\n"));
+    Log.println(F("\n--- Initialization Complete ---"));
+    Log.println(F("Starting main loop...\n"));
 
     startupComplete = true;
 
@@ -252,7 +277,7 @@ void loop() {
     if (currentMillis - lastSensorRead >= SENSOR_READ_INTERVAL) {
         lastSensorRead = currentMillis;
 
-        Serial.println(F("\n[MAIN] Reading sensors..."));
+        Log.println(F("\n[MAIN] Reading sensors..."));
         currentData = readAllSensors();
         printSensorData(currentData);
 
@@ -282,7 +307,7 @@ void loop() {
     if (currentMillis - lastMQTTPublish >= MQTT_PUBLISH_INTERVAL) {
         lastMQTTPublish = currentMillis;
 
-        Serial.println(F("\n[MAIN] MQTT publish cycle..."));
+        Log.println(F("\n[MAIN] MQTT publish cycle..."));
 
         ensureMQTTTransport(currentMillis);
 
@@ -291,7 +316,7 @@ void loop() {
                 publishBufferedData();
             }
         } else {
-            Serial.println(F("[MAIN] No transport available - skipping MQTT"));
+            Log.println(F("[MAIN] No transport available - skipping MQTT"));
         }
     }
 
@@ -299,15 +324,17 @@ void loop() {
     // TASK 4: Maintain MQTT connection
     // =========================================================
     if (activeConnection == CONN_WIFI && !isWiFiConnected()) {
-        Serial.println(F("[MAIN] WiFi dropped, resetting MQTT transport"));
+        Log.println(F("[MAIN] WiFi dropped, resetting MQTT transport"));
         disconnectMQTT();
+        stopDashboard();
         activeConnection = CONN_NONE;
     } else if (activeConnection == CONN_GPRS && !isGPRSConnected()) {
-        Serial.println(F("[MAIN] GPRS dropped, resetting MQTT transport"));
+        Log.println(F("[MAIN] GPRS dropped, resetting MQTT transport"));
         disconnectMQTT();
         activeConnection = CONN_NONE;
     }
     mqttLoop();
+    handleDashboard();
 
     // Small delay to prevent watchdog issues and reduce power
     delay(10);
@@ -318,25 +345,26 @@ void loop() {
 // =============================================================================
 
 static bool connectWiFi() {
-    Serial.print(F("[WIFI] Connecting to "));
-    Serial.println(WIFI_SSID);
+    Log.print(F("[WIFI] Connecting to "));
+    Log.println(runtimeCfg.wifiSSID);
 
-    WiFi.begin(WIFI_SSID, WIFI_PASS_KEY);
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(runtimeCfg.wifiSSID, runtimeCfg.wifiPass);
 
     unsigned long start = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT) {
         delay(250);
-        Serial.print(F("."));
+        Log.print(F("."));
     }
-    Serial.println();
+    Log.println();
 
     if (WiFi.status() == WL_CONNECTED) {
-        Serial.print(F("[WIFI] Connected, IP: "));
-        Serial.println(WiFi.localIP());
+        Log.print(F("[WIFI] Connected, IP: "));
+        Log.println(WiFi.localIP());
         return true;
     }
 
-    Serial.println(F("[WIFI] Connection failed"));
+    Log.println(F("[WIFI] Connection failed"));
     WiFi.disconnect(true);
     return false;
 }
@@ -355,7 +383,7 @@ static void ensureMQTTTransport(unsigned long currentMillis) {
     // Try WiFi first (always preferred)
     if (isWiFiConnected()) {
         if (activeConnection != CONN_WIFI) {
-            Serial.println(F("[MAIN] Switching MQTT transport to WiFi"));
+            Log.println(F("[MAIN] Switching MQTT transport to WiFi"));
             disconnectMQTT();
             mqtt.setClient(wifiClient);
             activeConnection = CONN_WIFI;
@@ -367,10 +395,11 @@ static void ensureMQTTTransport(unsigned long currentMillis) {
     if (currentMillis - lastWiFiAttempt >= WIFI_RETRY_INTERVAL) {
         lastWiFiAttempt = currentMillis;
         if (connectWiFi()) {
-            Serial.println(F("[MAIN] Switching MQTT transport to WiFi"));
+            Log.println(F("[MAIN] Switching MQTT transport to WiFi"));
             disconnectMQTT();
             mqtt.setClient(wifiClient);
             activeConnection = CONN_WIFI;
+            initDashboard();
             return;
         }
     }
@@ -378,7 +407,7 @@ static void ensureMQTTTransport(unsigned long currentMillis) {
     // Fall back to GPRS
     if (isGPRSConnected()) {
         if (activeConnection != CONN_GPRS) {
-            Serial.println(F("[MAIN] Switching MQTT transport to GPRS"));
+            Log.println(F("[MAIN] Switching MQTT transport to GPRS"));
             disconnectMQTT();
             mqtt.setClient(gsmClient);
             activeConnection = CONN_GPRS;
@@ -390,7 +419,7 @@ static void ensureMQTTTransport(unsigned long currentMillis) {
     if (currentMillis - lastGPRSAttempt >= GPRS_RETRY_INTERVAL) {
         lastGPRSAttempt = currentMillis;
         if (connectGPRS()) {
-            Serial.println(F("[MAIN] Switching MQTT transport to GPRS"));
+            Log.println(F("[MAIN] Switching MQTT transport to GPRS"));
             disconnectMQTT();
             mqtt.setClient(gsmClient);
             activeConnection = CONN_GPRS;
@@ -409,24 +438,29 @@ static void ensureMQTTTransport(unsigned long currentMillis) {
 static void handleSMSCommand(const SMSMessage& msg) {
     SMSCommand cmd = parseSMSCommand(msg.content);
 
-    Serial.print(F("[MAIN] SMS command from "));
-    Serial.print(msg.sender);
-    Serial.print(F(": "));
+    Log.print(F("[MAIN] SMS command from "));
+    Log.print(msg.sender);
+    Log.print(F(": "));
 
     switch (cmd) {
         case SMS_CMD_STATUS:
-            Serial.println(F("STATUS"));
+            Log.println(F("STATUS"));
             handleStatusCommand(msg.sender);
             break;
 
         case SMS_CMD_RESET:
-            Serial.println(F("RESET"));
+            Log.println(F("RESET"));
             handleResetCommand();
             break;
 
+        case SMS_CMD_WIFI_RESET:
+            Log.println(F("WIFI RESET"));
+            handleWiFiResetCommand(msg.sender);
+            break;
+
         default:
-            Serial.println(F("UNKNOWN"));
-            sendSMS(msg.sender.c_str(), "Unknown command.\nValid: STATUS, RESET");
+            Log.println(F("UNKNOWN"));
+            sendSMS(msg.sender.c_str(), "Unknown command.\nValid: STATUS, RESET, WIFI RESET");
             break;
     }
 }
@@ -452,6 +486,13 @@ static void handleStatusCommand(const String& sender) {
 
 static void handleResetCommand() {
     sendSMS(ADMIN_PHONE, "Restarting device...");
+    delay(2000);  // Allow SMS to send
+    ESP.restart();
+}
+
+static void handleWiFiResetCommand(const String& sender) {
+    sendSMS(sender.c_str(), "WiFi config cleared.\nRestarting into setup portal...");
+    clearConfig();
     delay(2000);  // Allow SMS to send
     ESP.restart();
 }

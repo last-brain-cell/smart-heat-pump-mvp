@@ -43,6 +43,7 @@ enum SMSCommand {
     SMS_CMD_NONE = 0,
     SMS_CMD_STATUS,
     SMS_CMD_RESET,
+    SMS_CMD_WIFI_RESET,
     SMS_CMD_UNKNOWN
 };
 
