@@ -1,0 +1,118 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+    paths: ['server/**']
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: ${{ github.repository_owner }}
+
+jobs:
+  build:
+    name: Build & Push Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: server/backend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/heatpump-backend:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/heatpump-backend:${{ github.sha }}
+
+      - name: Build and push dashboard
+        uses: docker/build-push-action@v6
+        with:
+          context: server/dashboard
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/heatpump-dashboard:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/heatpump-dashboard:${{ github.sha }}
+
+      - name: Build and push mosquitto
+        uses: docker/build-push-action@v6
+        with:
+          context: server/mosquitto
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/heatpump-mqtt:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/heatpump-mqtt:${{ github.sha }}
+
+  deploy:
+    name: Deploy to EC2
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy compose file to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: server/docker-compose.prod.yml
+          target: ~/heatpump
+          strip_components: 1
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script_stop: true
+          envs: INFLUXDB_USER,INFLUXDB_PASSWORD,INFLUXDB_ORG,INFLUXDB_BUCKET,INFLUXDB_RETENTION,INFLUXDB_TOKEN,MQTT_USER,MQTT_PASSWORD,GHCR_OWNER
+          script: |
+            set -e
+            cd ~/heatpump
+
+            # Write .env from GitHub Secrets
+            cat > .env << EOF
+            GHCR_OWNER=${GHCR_OWNER}
+            INFLUXDB_USER=${INFLUXDB_USER}
+            INFLUXDB_PASSWORD=${INFLUXDB_PASSWORD}
+            INFLUXDB_ORG=${INFLUXDB_ORG}
+            INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+            INFLUXDB_RETENTION=${INFLUXDB_RETENTION}
+            INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+            MQTT_USER=${MQTT_USER}
+            MQTT_PASSWORD=${MQTT_PASSWORD}
+            EOF
+
+            # Pull and restart
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+
+            # Verify
+            sleep 15
+            curl -f http://localhost/api/health || echo "WARNING: Health check failed"
+            docker image prune -f
+        env:
+          INFLUXDB_USER: ${{ secrets.INFLUXDB_USER }}
+          INFLUXDB_PASSWORD: ${{ secrets.INFLUXDB_PASSWORD }}
+          INFLUXDB_ORG: ${{ secrets.INFLUXDB_ORG }}
+          INFLUXDB_BUCKET: ${{ secrets.INFLUXDB_BUCKET }}
+          INFLUXDB_RETENTION: ${{ secrets.INFLUXDB_RETENTION }}
+          INFLUXDB_TOKEN: ${{ secrets.INFLUXDB_TOKEN }}
+          MQTT_USER: ${{ secrets.MQTT_USER }}
+          MQTT_PASSWORD: ${{ secrets.MQTT_PASSWORD }}
+          GHCR_OWNER: ${{ github.repository_owner }}
