@@ -12,6 +12,8 @@ const REFRESH_INTERVAL = 10000; // 10 seconds
 let currentDevice = 'site1';
 let ws = null;
 let reconnectAttempts = 0;
+let restConnected = false;
+let wsConnected = false;
 
 // DOM Elements
 const elements = {
@@ -19,10 +21,8 @@ const elements = {
     lastUpdate: document.getElementById('last-update'),
     statDevices: document.getElementById('stat-devices'),
     statReadings: document.getElementById('stat-readings'),
-    statAlerts: document.getElementById('stat-alerts'),
     deviceList: document.getElementById('device-list'),
     currentDevice: document.getElementById('current-device'),
-    alertsList: document.getElementById('alerts-list'),
     // Sensor readings
     tempInlet: document.getElementById('temp-inlet'),
     tempOutlet: document.getElementById('temp-outlet'),
@@ -30,12 +30,8 @@ const elements = {
     tempCompressor: document.getElementById('temp-compressor'),
     voltage: document.getElementById('voltage'),
     current: document.getElementById('current'),
-    power: document.getElementById('power'),
     pressureHigh: document.getElementById('pressure-high'),
-    pressureLow: document.getElementById('pressure-low'),
-    statusCompressor: document.getElementById('status-compressor'),
-    statusFan: document.getElementById('status-fan'),
-    statusDefrost: document.getElementById('status-defrost')
+    pressureLow: document.getElementById('pressure-low')
 };
 
 // ===========================================
@@ -46,9 +42,16 @@ async function fetchAPI(endpoint) {
     try {
         const response = await fetch(`${API_BASE}${endpoint}`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return await response.json();
+        const data = await response.json();
+        restConnected = true;
+        setConnectionStatus(true);
+        return data;
     } catch (error) {
         console.error(`API Error (${endpoint}):`, error);
+        restConnected = false;
+        if (!wsConnected) {
+            setConnectionStatus(false);
+        }
         return null;
     }
 }
@@ -58,7 +61,6 @@ async function fetchStats() {
     if (stats) {
         elements.statDevices.textContent = stats.devices_online;
         elements.statReadings.textContent = formatNumber(stats.total_readings);
-        elements.statAlerts.textContent = stats.active_alerts;
     }
 }
 
@@ -83,27 +85,6 @@ async function fetchLatestReading(deviceId) {
     }
 }
 
-async function fetchAlerts() {
-    const alerts = await fetchAPI('/alerts?unacknowledged_only=true&limit=10');
-    if (alerts) {
-        renderAlerts(alerts);
-    }
-}
-
-async function acknowledgeAlert(alertId) {
-    try {
-        const response = await fetch(`${API_BASE}/alerts/${alertId}/acknowledge`, {
-            method: 'POST'
-        });
-        if (response.ok) {
-            fetchAlerts();
-            fetchStats();
-        }
-    } catch (error) {
-        console.error('Error acknowledging alert:', error);
-    }
-}
-
 // ===========================================
 // WebSocket
 // ===========================================
@@ -114,13 +95,17 @@ function connectWebSocket() {
 
         ws.onopen = () => {
             console.log('WebSocket connected');
+            wsConnected = true;
             setConnectionStatus(true);
             reconnectAttempts = 0;
         };
 
         ws.onclose = () => {
             console.log('WebSocket disconnected');
-            setConnectionStatus(false);
+            wsConnected = false;
+            if (!restConnected) {
+                setConnectionStatus(false);
+            }
             // Reconnect with exponential backoff
             const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
             reconnectAttempts++;
@@ -152,11 +137,6 @@ function handleWebSocketMessage(message) {
         updateReadingsFromMQTT(message.data);
         updateLastUpdate();
     }
-
-    if (message.type === 'alert') {
-        fetchAlerts();
-        fetchStats();
-    }
 }
 
 // ===========================================
@@ -183,31 +163,6 @@ function renderDevices(devices) {
     `).join('');
 }
 
-function renderAlerts(alerts) {
-    if (alerts.length === 0) {
-        elements.alertsList.innerHTML = '<p class="no-alerts">No active alerts</p>';
-        return;
-    }
-
-    elements.alertsList.innerHTML = alerts.map(alert => `
-        <div class="alert-item">
-            <div class="alert-info">
-                <div class="alert-icon ${alert.alert_level}">
-                    ${alert.alert_level === 'critical' ? '!' : '⚠'}
-                </div>
-                <div>
-                    <div class="alert-type">${formatAlertType(alert.alert_type)}</div>
-                    <div class="alert-message">${alert.message || `Value: ${alert.value}`}</div>
-                </div>
-            </div>
-            <div class="alert-time">${formatTime(alert.timestamp)}</div>
-            <button class="alert-action" onclick="acknowledgeAlert(${alert.id})">
-                Acknowledge
-            </button>
-        </div>
-    `).join('');
-}
-
 function updateReadings(status) {
     if (!status) return;
 
@@ -218,14 +173,9 @@ function updateReadings(status) {
 
     setValueWithAlert(elements.voltage, status.voltage, 'V', null, null, 210, 250);
     setValueWithAlert(elements.current, status.current, 'A', 12, 15);
-    setValueWithAlert(elements.power, status.power, 'W');
 
     setValueWithAlert(elements.pressureHigh, status.pressure_high, 'PSI', 400, 450);
     setValueWithAlert(elements.pressureLow, status.pressure_low, 'PSI', null, null, 20, 40);
-
-    setStatusBadge(elements.statusCompressor, status.compressor_running);
-    setStatusBadge(elements.statusFan, status.fan_running);
-    setStatusBadge(elements.statusDefrost, status.defrost_active);
 
     updateLastUpdate();
 }
@@ -240,14 +190,9 @@ function updateReadingsFromData(data) {
 
     setValueWithAlert(elements.voltage, data.voltage, 'V', null, null, 210, 250);
     setValueWithAlert(elements.current, data.current, 'A', 12, 15);
-    setValueWithAlert(elements.power, data.power, 'W');
 
     setValueWithAlert(elements.pressureHigh, data.pressure_high, 'PSI', 400, 450);
     setValueWithAlert(elements.pressureLow, data.pressure_low, 'PSI', null, null, 20, 40);
-
-    setStatusBadge(elements.statusCompressor, data.compressor_running);
-    setStatusBadge(elements.statusFan, data.fan_running);
-    setStatusBadge(elements.statusDefrost, data.defrost_active);
 
     updateLastUpdate();
 }
@@ -258,7 +203,6 @@ function updateReadingsFromMQTT(data) {
     const temps = data.temperature || {};
     const elec = data.electrical || {};
     const pressure = data.pressure || {};
-    const status = data.status || {};
 
     setValueWithAlert(elements.tempInlet, temps.inlet, '°C');
     setValueWithAlert(elements.tempOutlet, temps.outlet, '°C');
@@ -267,14 +211,9 @@ function updateReadingsFromMQTT(data) {
 
     setValueWithAlert(elements.voltage, elec.voltage, 'V', null, null, 210, 250);
     setValueWithAlert(elements.current, elec.current, 'A', 12, 15);
-    setValueWithAlert(elements.power, elec.power, 'W');
 
     setValueWithAlert(elements.pressureHigh, pressure.high, 'PSI', 400, 450);
     setValueWithAlert(elements.pressureLow, pressure.low, 'PSI', null, null, 20, 40);
-
-    setStatusBadge(elements.statusCompressor, status.compressor);
-    setStatusBadge(elements.statusFan, status.fan);
-    setStatusBadge(elements.statusDefrost, status.defrost);
 }
 
 // ===========================================
@@ -300,23 +239,13 @@ function setValueWithAlert(element, value, unit, warnHigh, critHigh, critLow, wa
     element.className = `value ${alertClass}`;
 }
 
-function setStatusBadge(element, isOn) {
-    if (isOn) {
-        element.textContent = 'ON';
-        element.className = 'status-badge on';
-    } else {
-        element.textContent = 'OFF';
-        element.className = 'status-badge off';
-    }
-}
-
 function setConnectionStatus(connected) {
     if (connected) {
         elements.connectionStatus.textContent = 'Connected';
-        elements.connectionStatus.className = 'status-indicator online';
+        elements.connectionStatus.className = 'conn-badge online';
     } else {
         elements.connectionStatus.textContent = 'Disconnected';
-        elements.connectionStatus.className = 'status-indicator offline';
+        elements.connectionStatus.className = 'conn-badge offline';
     }
 }
 
@@ -349,12 +278,6 @@ function formatTime(timestamp) {
     return date.toLocaleString();
 }
 
-function formatAlertType(type) {
-    return type.split('_').map(word =>
-        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    ).join(' ');
-}
-
 function selectDevice(deviceId) {
     currentDevice = deviceId;
     elements.currentDevice.textContent = deviceId;
@@ -380,8 +303,7 @@ async function init() {
     await Promise.all([
         fetchStats(),
         fetchDevices(),
-        fetchDeviceStatus(currentDevice),
-        fetchAlerts()
+        fetchDeviceStatus(currentDevice)
     ]);
 
     // Connect WebSocket for real-time updates
@@ -391,7 +313,6 @@ async function init() {
     setInterval(() => {
         fetchStats();
         fetchDeviceStatus(currentDevice);
-        fetchAlerts();
     }, REFRESH_INTERVAL);
 }
 
