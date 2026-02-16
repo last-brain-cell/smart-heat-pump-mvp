@@ -42,7 +42,7 @@
 #define ADMIN_PHONE "+917722087410"
 
 // Validation marker for configuration check
-#define ADMIN_PHONE_PLACEHOLDER "+917722087410"
+#define ADMIN_PHONE_PLACEHOLDER "+1234567890"
 
 // =============================================================================
 // [REQUIRED] GSM/GPRS SETTINGS
@@ -62,16 +62,16 @@
 // =============================================================================
 // MQTT BROKER SETTINGS — compile-time defaults, overridden by portal config in NVS
 // =============================================================================
-#define MQTT_BROKER "192.168.1.7"   ///< Local MQTT broker hostname or IP
-//#define MQTT_BROKER "3.25.160.251"   ///< Deployed MQTT broker hostname or IP
+// #define MQTT_BROKER "192.168.1.7"   ///< Local MQTT broker hostname or IP
+#define MQTT_BROKER "15.134.213.55"   ///< Deployed MQTT broker hostname or IP
 #define MQTT_PORT 1883                   ///< MQTT broker port
 #define MQTT_USER "heatpump"             ///< MQTT username
 #define MQTT_PASS "heatpump123"             ///< MQTT password
 #define MQTT_CLIENT_ID DEVICE_ID         ///< MQTT client identifier
 
 // Validation markers for configuration check
-#define MQTT_BROKER_PLACEHOLDER "localhost"
-#define MQTT_PASS_PLACEHOLDER "heatpump123"
+#define MQTT_BROKER_PLACEHOLDER "your-broker-ip"
+#define MQTT_PASS_PLACEHOLDER "your-mqtt-password"
 
 // =============================================================================
 // TIMING INTERVALS (milliseconds)
