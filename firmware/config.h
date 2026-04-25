@@ -76,8 +76,8 @@
 // =============================================================================
 // TIMING INTERVALS (milliseconds)
 // =============================================================================
-#define SENSOR_READ_INTERVAL 5000UL   ///< 10 seconds - sensor polling
-#define MQTT_PUBLISH_INTERVAL 5000UL  ///< 10 seconds - MQTT data publish (INCREASE LATER: REDUCED FOR PROTOTYPE)
+#define SENSOR_READ_INTERVAL 2000UL   ///< 10 seconds - sensor polling
+#define MQTT_PUBLISH_INTERVAL 2000UL  ///< 10 seconds - MQTT data publish (INCREASE LATER: REDUCED FOR PROTOTYPE)
 #define ALERT_COOLDOWN 300000UL        ///< 5 minutes - between same alerts
 #define SMS_CHECK_INTERVAL 5000UL      ///< 5 seconds - check for SMS
 #define GPRS_RETRY_INTERVAL 60000UL    ///< 1 minute - between GPRS retries
@@ -90,7 +90,7 @@
 // =============================================================================
 #define PIN_GSM_RX 16  ///< ESP32 GPIO16 <- SIM800C TX
 #define PIN_GSM_TX 17  ///< ESP32 GPIO17 -> SIM800C RX
-#define GSM_BAUD 9600  ///< SIM800C default baud rate
+#define GSM_BAUD 115200  ///< SIM800C default baud rate
 
 // =============================================================================
 // PIN DEFINITIONS - Temperature Sensors (10K NTC Thermistors)
@@ -104,7 +104,7 @@
 // =============================================================================
 // PIN DEFINITIONS - Electrical Sensors
 // =============================================================================
-#define PIN_VOLTAGE 36  ///< ADC1_CH0 (VP) - ZMPT101B AC voltage sensor
+#define PIN_VOLTAGE 27  ///< ADC2_CH7 - ZMPT101B AC voltage sensor
 #define PIN_CURRENT 39  ///< ADC1_CH3 (VN) - ACS712-20A current sensor
 
 // =============================================================================
@@ -123,22 +123,24 @@
 // SENSOR CALIBRATION CONSTANTS
 // =============================================================================
 
-// NTC Thermistor (10K)
-#define NTC_BETA 4162.0f                 ///< B-coefficient (verify with datasheet)
-#define NTC_NOMINAL_RESISTANCE 10633.0f  ///< Resistance at 25C
-#define NTC_NOMINAL_TEMP 25.0f           ///< Temperature for nominal resistance
-#define NTC_SERIES_RESISTANCE 10000.0f   ///< Series resistor value
-#define TEMP_SMOOTHING_SAMPLES 16        ///< Number of ADC samples for smoothed reading
-#define TEMP_TRIM_COUNT 4                ///< Samples to discard from each end (trimmed mean)
+// NTC Thermistor (10K) — Steinhart-Hart coefficients
+// Fitted from 23 calibration points (28–50°C), accuracy ±0.5°C
+#define SH_COEFF_A 4.2432706645e-03f    ///< Steinhart-Hart A coefficient
+#define SH_COEFF_B -3.0205774193e-04f   ///< Steinhart-Hart B coefficient
+#define SH_COEFF_C 2.4244657301e-06f    ///< Steinhart-Hart C coefficient
+#define NTC_SERIES_RESISTANCE 9800.0f  ///< Series resistor value (measure with multimeter)
+#define TEMP_SMOOTHING_SAMPLES 16       ///< Number of ADC samples for smoothed reading
+#define TEMP_TRIM_COUNT 4               ///< Samples to discard from each end (trimmed mean)
 
 // ZMPT101B AC Voltage Sensor
 #define VOLTAGE_SAMPLES 500           ///< Number of samples for RMS calculation
 #define VOLTAGE_SCALE_FACTOR 234.26f  ///< Calibrate with known voltage source
 
-// ACS712-20A Current Sensor
-#define ACS712_SENSITIVITY 0.100f  ///< 100mV per Amp for 20A version
-#define ACS712_ZERO_POINT 1.65f    ///< ~1.65V at 0A (with 3.3V reference)
-#define CURRENT_SAMPLES 500        ///< Number of samples for RMS calculation
+// SCT-013-020 CT Clamp (20A / 1V output, built-in burden resistor)
+#define CT_OUTPUT_VOLTAGE_MAX 1.0f  ///< Max RMS output voltage at rated current
+#define CT_CURRENT_MAX 20.0f        ///< Rated max current (Amps RMS)
+#define CT_BIAS_VOLTAGE 1.65f       ///< DC bias midpoint from voltage divider (3.3V / 2)
+#define CURRENT_SAMPLES 500         ///< Number of samples for RMS calculation
 
 // Pressure Transducer (0.5-4.5V = 0-500 PSI)
 #define PRESSURE_MIN_VOLTAGE 0.5f

@@ -9,7 +9,7 @@
 | 10K NTC Thermistor | 4 | Temperature sensing | 40 each |
 | 10K Resistor (1/4W) | 4 | Thermistor voltage dividers | 5 each |
 | ZMPT101B Module | 1 | AC Voltage sensing | 250 |
-| ACS712-20A Module | 1 | Current sensing | 150 |
+| SCT-013-020 CT Clamp | 1 | Current sensing (non-invasive) | 250 |
 | Breadboard (830 points) | 1 | Prototyping | 150 |
 | Jumper Wires (M-M) | 30+ | Connections | 100 |
 | Micro SIM Card | 1 | Airtel/Vi with SMS pack | 50 |
@@ -42,7 +42,7 @@
 │   GPIO32 (ADC1_CH4) ◄─── Temperature: Ambient                               │
 │   GPIO33 (ADC1_CH5) ◄─── Temperature: Compressor                            │
 │   GPIO36 (VP)       ◄─── Voltage Sensor (ZMPT101B)                          │
-│   GPIO39 (VN)       ◄─── Current Sensor (ACS712)                            │
+│   GPIO39 (VN)       ◄─── Current Sensor (SCT-013 CT Clamp)                  │
 │   GPIO25           ◄─── Pressure: High Side (optional)                      │
 │   GPIO26           ◄─── Pressure: Low Side (optional)                       │
 │                                                                              │
@@ -76,7 +76,7 @@
                          │       ┌─────┐         │
                    EN ───┤1      │     │      30├─── GND
    Voltage ► GPIO36/VP ───┤2      │ESP32│      29├─── GPIO23 ──► Status LED
-   Current ► GPIO39/VN ───┤3      │     │      28├─── GPIO22 ──► Alarm LED
+  CT Clamp ► GPIO39/VN ───┤3      │     │      28├─── GPIO22 ──► Alarm LED
    Temp 1  ► GPIO34 ───┤4      │WROOM│      27├─── GPIO1/TX0 (USB Serial)
    Temp 2  ► GPIO35 ───┤5      │     │      26├─── GPIO3/RX0 (USB Serial)
    Temp 3  ► GPIO32 ───┤6      │     │      25├─── GPIO21 ──► Buzzer
@@ -293,90 +293,106 @@ As temperature increases → NTC resistance decreases → Voltage at ADC pin inc
 
 ---
 
-## Section 4: Current Sensor (ACS712-20A)
+## Section 4: Current Sensor (SCT-013-020 CT Clamp)
 
-### About the Module
-- Measures AC/DC current (0-20A)
-- Outputs 0-5V analog (2.5V = 0A)
-- Hall effect sensor (isolated)
+### About the Sensor
+- Non-invasive AC current measurement (clamp-on)
+- SCT-013-020: 20A max, built-in burden resistor, outputs 0-1V AC
+- Fully isolated — no electrical contact with mains
+- Output is AC signal centered at 0V, needs DC bias circuit for ESP32
+
+### Components
+- SCT-013-020 CT Clamp (with 3.5mm audio jack)
+- 2x 10K Resistors (DC bias voltage divider)
+- 1x 10µF Electrolytic Capacitor (bias smoothing)
+- 3.5mm Audio Jack Breakout (or cut cable and solder)
 
 ### Connection Table
 
-| ACS712 | ESP32 | Notes |
-|--------|-------|-------|
-| VCC | 5V (VIN) | Requires 5V |
-| GND | GND | Common ground |
-| OUT | GPIO39 (VN) | Analog output (needs divider!) |
+| CT Clamp Circuit | ESP32 | Notes |
+|------------------|-------|-------|
+| Signal (via bias circuit) | GPIO39 (VN) | Analog input |
+| Bias divider | 3.3V + GND | Creates 1.65V midpoint |
 
-### ⚠️ Voltage Divider Required!
+### DC Bias Circuit (Required!)
 
-ACS712 outputs 0-5V, but ESP32 ADC only handles 0-3.3V.
-You need a voltage divider:
+The CT clamp outputs an AC signal that swings positive and negative.
+ESP32 ADC only reads 0-3.3V, so we bias the signal to 1.65V midpoint:
 
 ```
-    ACS712 OUT                      ESP32
-        │
-        │
-       ┌┴┐
-       │ │ 10K Resistor
-       │ │
-       └┬┘
-        │
-        ├─────────────────────────► GPIO39 (VN)
-        │
-       ┌┴┐
-       │ │ 20K Resistor (or two 10K in series)
-       │ │
-       └┬┘
-        │
-       GND
+    3.3V
+     │
+    ┌┴┐
+    │ │ 10K Resistor
+    │ │
+    └┬┘
+     │
+     ├──────────────┬──────────────► GPIO39 (VN)
+     │              │
+     │          CT Clamp
+     │          Signal Wire ─────┐
+     │                           │
+    ┌┴┐                     ┌────┴────┐
+    │ │ 10K Resistor        │  10µF   │ (smoothing cap)
+    │ │                     │  Cap    │
+    └┬┘                     └────┬────┘
+     │                           │
+     ├───────────────────────────┘
+     │
+    GND
+    (CT clamp other wire also to GND)
 
-    This divides 5V down to 3.3V (safe for ESP32)
-    Formula: Vout = Vin × (20K / (10K + 20K)) = 5V × 0.66 = 3.3V
+    Bias voltage = 3.3V × (10K / (10K + 10K)) = 1.65V
+    CT signal rides on top of this 1.65V DC offset
 ```
 
 ### Wiring Diagram
 
 ```
-                               ACS712-20A Module                 
-                              ┌─────────────────┐                
-                              │                 │                
-    Load Wire ────────────────┤ IP+        VCC ├────────► 5V (VIN)
-    (Current to measure)      │                 │                
-    Load Wire ────────────────┤ IP-        GND ├────────► GND
-                              │                 │                
-                              │            OUT ├───┬─────► (to divider)
-                              │                 │   │
-                              └─────────────────┘   │
-                                                    │
-                                                   ┌┴┐
-                                                   │ │ 10K
-                                                   └┬┘
-                                                    │
-                                                    ├──► GPIO39 (VN)
-                                                    │
-                                                   ┌┴┐
-                                                   │ │ 20K
-                                                   └┬┘
-                                                    │
-                                                   GND
+     ┌────────────────────────┐
+     │  SCT-013-020 CT Clamp  │
+     │                        │
+     │   ┌──────────────────┐ │
+     │   │  Clamp around    │ │       DC Bias Circuit          ESP32
+     │   │  ONE wire of     │ │
+     │   │  the heat pump   │ │       3.3V
+     │   │  power cable     │ │        │
+     │   └──────────────────┘ │       ┌┴┐
+     │                        │       │ │ 10K
+     │    Signal ─────────────┼───────┤ │
+     │    (red wire)          │       └┬┘
+     │                        │        │
+     │                        │        ├────┬────────────► GPIO39 (VN)
+     │    GND ────────────────┼──┐     │    │
+     │    (white wire)        │  │    ┌┴┐  ═══ 10µF
+     │                        │  │    │ │ 10K  │
+     └────────────────────────┘  │    └┬┘      │
+                                 │     │       │
+                                 └─────┴───────┴──────── GND
 ```
 
-### Current Flow Measurement
+### Installation
 
 ```
-    Power Source                    ACS712                      Load
-   ┌───────────┐              ┌─────────────────┐          ┌──────────┐
-   │           │              │                 │          │          │
-   │    (+) ───┼──────────────┤ IP+        IP- ├──────────┤ (+)      │
-   │           │              │                 │          │   Heat   │
-   │           │              │    ┌───────┐   │          │   Pump   │
-   │           │              │    │ACS712 │   │          │          │
-   │    (-) ───┼──────────────┼────┼───────┼───┼──────────┤ (-)      │
-   │           │              │    └───────┘   │          │          │
-   └───────────┘              └─────────────────┘          └──────────┘
-                                      │
-                                     OUT ──► To ESP32
+    ⚡ Mains Cable to Heat Pump
+    ════════════════════════════════════════
+
+         ┌──────────────┐
+         │   Separate   │    Clamp around ONE wire only
+    ─────┤   the Live   ├──────────────────────────────
+         │   wire       │
+         └──────┬───────┘
+                │
+         ┌──────┴───────┐
+         │  SCT-013-020 │
+         │  CT Clamp    │
+         └──────────────┘
+                │
+           Signal to ESP32
+
+    ⚠️ IMPORTANT: Clamp around only ONE conductor (Live OR Neutral).
+    If you clamp around the whole cable (Live + Neutral together),
+    the magnetic fields cancel out and you read zero!
 ```
 
 ---
@@ -504,7 +520,7 @@ Transducer outputs up to 4.5V, need to reduce for ESP32:
   - │ ●═══════════════════════════════════════════════════════════════════●  │ GND
     └─────────────────────────────────────────────────────────────────────────┘
 
-    5V Rail (for SIM800C, ACS712):
+    5V Rail (for SIM800C):
     ┌─────────────────────────────────────────────────────────────────────────┐
  5V │ ●═══════════════════════════════════════════════════════════════════●  │ From VIN
     └─────────────────────────────────────────────────────────────────────────┘
@@ -535,7 +551,7 @@ Transducer outputs up to 4.5V, need to reduce for ESP32:
     ─────────────────────
     • ESP32: Columns 1-15, straddling center gap
     • Temperature sensors: Columns 20-35
-    • Voltage/Current sensors: Columns 40-50 (off-board, wired in)
+    • Voltage sensor + CT bias circuit: Columns 40-50
     • SIM800C: Off breadboard (use jumper wires)
     • LEDs: Columns 55-60
 ```
@@ -563,10 +579,12 @@ Transducer outputs up to 4.5V, need to reduce for ESP32:
 - [ ] **TEST: Read voltage value (CAREFUL with mains!)**
 - [ ] Or skip and use simulated values for now
 
-### Phase 4: Add Current Sensor
-- [ ] ACS712 connected with voltage divider
-- [ ] Divider output to GPIO39
-- [ ] **TEST: Read current value**
+### Phase 4: Add Current Sensor (CT Clamp)
+- [ ] DC bias circuit built (2x 10K divider + 10µF cap)
+- [ ] Bias circuit output to GPIO39
+- [ ] SCT-013-020 signal wire connected to bias circuit
+- [ ] CT clamp clamped around ONE wire of heat pump power cable
+- [ ] **TEST: Read current value (should be ~1.65V / ~0A with no load)**
 
 ### Phase 5: Add Status Indicators
 - [ ] Red LED with resistor on GPIO22
@@ -599,10 +617,10 @@ Transducer outputs up to 4.5V, need to reduce for ESP32:
 | ZMPT101B VCC | 3.3V | Red | Power |
 | ZMPT101B GND | GND | Black | Ground |
 | ZMPT101B OUT | GPIO36 (VP) | Blue | Analog signal |
-| **Current Sensor** | | | |
-| ACS712 VCC | VIN (5V) | Red | Power |
-| ACS712 GND | GND | Black | Ground |
-| ACS712 OUT | GPIO39 (VN) | Blue | Via voltage divider |
+| **Current Sensor (CT Clamp)** | | | |
+| CT Bias (3.3V) | 3.3V | Red | 10K resistor to bias node |
+| CT Bias (GND) | GND | Black | 10K resistor to bias node |
+| CT Signal | GPIO39 (VN) | Blue | Via DC bias circuit |
 | **LEDs** | | | |
 | Red LED | GPIO22 | Red | Via 330Ω resistor |
 | Green LED | GPIO23 | Green | Via 330Ω resistor |
@@ -611,7 +629,7 @@ Transducer outputs up to 4.5V, need to reduce for ESP32:
 | Buzzer - | GND | Black | Ground |
 | **Power Rails** | | | |
 | 3.3V Rail | 3.3V | Red | Sensor power |
-| 5V Rail | VIN | Red | SIM800C, ACS712 |
+| 5V Rail | VIN | Red | SIM800C |
 | GND Rail | GND | Black | Common ground |
 
 ---
@@ -765,7 +783,7 @@ OK
 | Temperature reads very high/low | Wrong resistor value | Use 10K resistor |
 | All temps same value | Sensors shorted together | Check for bridged wires |
 | Voltage always 0 | ZMPT101B not powered | Check VCC connection |
-| Current always ~2048 | No current flowing (normal at 0A) | This is correct! 2048 = 0A |
+| Current always ~2048 | No current flowing (normal at 0A) | This is correct! 2048 = 0A (1.65V bias) |
 | SIM800C no response | TX/RX swapped | Swap yellow and green wires |
 | LEDs don't light | Wrong polarity or no resistor | Check LED direction, add resistor |
 

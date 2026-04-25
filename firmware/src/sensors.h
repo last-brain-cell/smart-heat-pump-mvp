@@ -50,8 +50,8 @@ float readTemperature(int pin);
 float readVoltageRMS(int pin);
 
 /**
- * @brief Read AC current RMS from ACS712 sensor
- * @param pin ADC pin connected to current sensor
+ * @brief Read AC current RMS from SCT-013 CT clamp
+ * @param pin ADC pin connected to CT clamp (via DC bias circuit)
  * @return Current in Amps RMS
  */
 float readCurrentRMS(int pin);

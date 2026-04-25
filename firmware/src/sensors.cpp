@@ -157,8 +157,8 @@ float readTemperature(int pin) {
         return NAN;  // Sensor disconnected or shorted to VCC
     }
 
-    // Calculate voltage from ADC reading
-    float voltage = rawADC * ADC_REFERENCE_VOLTAGE / ADC_MAX_VALUE;
+    // Use ESP32 calibrated ADC reading (accounts for ADC nonlinearity)
+    float voltage = analogReadMilliVolts(pin) / 1000.0f;
 
     // Calculate NTC resistance from voltage divider
     // Circuit: 3.3V -- [NTC] -- ADC -- [10K Series] -- GND
@@ -169,11 +169,10 @@ float readTemperature(int pin) {
         return NAN;
     }
 
-    // Steinhart-Hart equation with B parameter (simplified)
-    // 1/T = 1/T0 + (1/B) * ln(R/R0)
-    float steinhart = log(resistance / NTC_NOMINAL_RESISTANCE) / NTC_BETA;
-    steinhart += 1.0f / (NTC_NOMINAL_TEMP + 273.15f);
-    float temperature = (1.0f / steinhart) - 273.15f;
+    // Steinhart-Hart equation: 1/T = A + B·ln(R) + C·[ln(R)]³
+    float lnR = log(resistance);
+    float invT = SH_COEFF_A + SH_COEFF_B * lnR + SH_COEFF_C * lnR * lnR * lnR;
+    float temperature = (1.0f / invT) - 273.15f;
 
     return temperature;
 }
@@ -203,23 +202,23 @@ float readVoltageRMS(int pin) {
 float readCurrentRMS(int pin) {
     int64_t sumSquares = 0;
     int sample;
-    int zeroPoint = (int)(ACS712_ZERO_POINT * ADC_MAX_VALUE / ADC_REFERENCE_VOLTAGE);
+    int biasPoint = (int)(CT_BIAS_VOLTAGE * ADC_MAX_VALUE / ADC_REFERENCE_VOLTAGE);
 
-    // Sample the AC waveform
+    // Sample the AC waveform from CT clamp (biased at ~1.65V midpoint)
     for (int i = 0; i < CURRENT_SAMPLES; i++) {
         sample = analogRead(pin);
-        // Center around zero point
-        sample -= zeroPoint;
+        // Center around DC bias midpoint
+        sample -= biasPoint;
         sumSquares += (int64_t)sample * sample;
         delayMicroseconds(200);  // ~50 samples per 50Hz cycle
     }
 
-    // Calculate RMS
+    // Calculate RMS voltage at ADC input
     float rms = sqrt((float)sumSquares / CURRENT_SAMPLES);
-
-    // Convert to current
     float voltageRMS = rms * ADC_REFERENCE_VOLTAGE / ADC_MAX_VALUE;
-    float current = voltageRMS / ACS712_SENSITIVITY;
+
+    // Convert to current using CT ratio: I = V * (Imax / Vmax)
+    float current = voltageRMS * CT_CURRENT_MAX / CT_OUTPUT_VOLTAGE_MAX;
 
     return current;
 }

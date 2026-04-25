@@ -6,7 +6,7 @@
 // Configuration
 const API_BASE = '/api';
 const WS_URL = `ws://${window.location.host}/ws`;
-const REFRESH_INTERVAL = 10000; // 10 seconds
+const REFRESH_INTERVAL = 2000; // 10 seconds
 
 // State
 let currentDevice = 'site1';
