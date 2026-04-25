@@ -7,6 +7,9 @@
 #include "globals.h"
 #include <math.h>
 
+// Auto-calibrated zero-current ADC bias (measured at startup)
+static int currentBiasADC = 0;
+
 // =============================================================================
 // IMPLEMENTATION
 // =============================================================================
@@ -29,6 +32,16 @@ void initSensors() {
     // Status LED
     pinMode(PIN_STATUS_LED, OUTPUT);
     digitalWrite(PIN_STATUS_LED, LOW);
+
+    // Auto-calibrate current sensor zero point
+    long sum = 0;
+    for (int i = 0; i < CURRENT_ZERO_SAMPLES; i++) {
+        sum += analogRead(PIN_CURRENT);
+        delayMicroseconds(200);
+    }
+    currentBiasADC = (int)(sum / CURRENT_ZERO_SAMPLES);
+    Log.print(F("[SENSORS] Current zero-bias ADC: "));
+    Log.println(currentBiasADC);
 
     Log.println(F("[SENSORS] Initialized"));
 }
@@ -202,13 +215,11 @@ float readVoltageRMS(int pin) {
 float readCurrentRMS(int pin) {
     int64_t sumSquares = 0;
     int sample;
-    int biasPoint = (int)(CT_BIAS_VOLTAGE * ADC_MAX_VALUE / ADC_REFERENCE_VOLTAGE);
 
-    // Sample the AC waveform from CT clamp (biased at ~1.65V midpoint)
+    // Sample the AC waveform (centered using auto-calibrated zero point)
     for (int i = 0; i < CURRENT_SAMPLES; i++) {
         sample = analogRead(pin);
-        // Center around DC bias midpoint
-        sample -= biasPoint;
+        sample -= currentBiasADC;
         sumSquares += (int64_t)sample * sample;
         delayMicroseconds(200);  // ~50 samples per 50Hz cycle
     }
@@ -217,8 +228,13 @@ float readCurrentRMS(int pin) {
     float rms = sqrt((float)sumSquares / CURRENT_SAMPLES);
     float voltageRMS = rms * ADC_REFERENCE_VOLTAGE / ADC_MAX_VALUE;
 
-    // Convert to current using CT ratio: I = V * (Imax / Vmax)
+    // Convert to current: I = V * (Imax / Vmax)
     float current = voltageRMS * CT_CURRENT_MAX / CT_OUTPUT_VOLTAGE_MAX;
+
+    // Suppress ADC noise at zero load
+    if (current < CURRENT_NOISE_FLOOR) {
+        current = 0.0f;
+    }
 
     return current;
 }
