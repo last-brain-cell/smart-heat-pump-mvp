@@ -184,28 +184,28 @@ void setup() {
     initAlerts();
 
     // Initialize GSM module
-    esp_task_wdt_reset();  // Reset watchdog before long-blocking GSM init
-    Log.println(F("\n--- GSM Initialization ---"));
-    if (initGSM()) {
-        if (waitForNetwork()) {
-            networkReady = true;
-
-            // Send startup notification
-            char startupMsg[SMS_BUFFER_SIZE];
-            snprintf(startupMsg, sizeof(startupMsg),
-                "Heat Pump Monitor Started\n"
-                "Device: %s\n"
-                "Version: %s\n"
-                "Mode: %s",
-                DEVICE_ID,
-                FIRMWARE_VERSION,
-                SIMULATION_MODE ? "Simulation" : "Live"
-            );
-
-            sendSMS(ADMIN_PHONE, startupMsg);
-            deleteAllSMS();
-        }
-    }
+//     esp_task_wdt_reset();  // Reset watchdog before long-blocking GSM init
+//     Log.println(F("\n--- GSM Initialization ---"));
+//     if (initGSM()) {
+//         if (waitForNetwork()) {
+//             networkReady = true;
+//
+//             // Send startup notification
+//             char startupMsg[SMS_BUFFER_SIZE];
+//             snprintf(startupMsg, sizeof(startupMsg),
+//                 "Heat Pump Monitor Started\n"
+//                 "Device: %s\n"
+//                 "Version: %s\n"
+//                 "Mode: %s",
+//                 DEVICE_ID,
+//                 FIRMWARE_VERSION,
+//                 SIMULATION_MODE ? "Simulation" : "Live"
+//             );
+//
+//             sendSMS(ADMIN_PHONE, startupMsg);
+//             deleteAllSMS();
+//         }
+//     }
 
     // Load runtime config from NVS (falls back to config.h defaults)
     esp_task_wdt_reset();
