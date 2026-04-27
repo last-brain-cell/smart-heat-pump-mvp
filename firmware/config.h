@@ -62,8 +62,8 @@
 // =============================================================================
 // MQTT BROKER SETTINGS — compile-time defaults, overridden by portal config in NVS
 // =============================================================================
-#define MQTT_BROKER "192.168.1.12"   ///< Local MQTT broker hostname or IP
-// #define MQTT_BROKER "15.134.213.55"  ///< Deployed MQTT broker hostname or IP
+//#define MQTT_BROKER "192.168.1.12"   ///< Local MQTT broker hostname or IP
+ #define MQTT_BROKER "heatpump.aquaproducts.in"  ///< Deployed MQTT broker hostname or IP
 #define MQTT_PORT 1883               ///< MQTT broker port
 #define MQTT_USER "heatpump"         ///< MQTT username
 #define MQTT_PASS "heatpump123"      ///< MQTT password
@@ -98,14 +98,14 @@
 // =============================================================================
 #define PIN_TEMP_INLET 34       ///< ADC1_CH6 - Water/refrigerant inlet
 #define PIN_TEMP_OUTLET 35      ///< ADC1_CH7 - Water/refrigerant outlet
-#define PIN_TEMP_AMBIENT 32     ///< ADC1_CH4 - Ambient air temperature
-#define PIN_TEMP_COMPRESSOR 33  ///< ADC1_CH5 - Compressor body temperature
+#define PIN_TEMP_AMBIENT 14     ///< ADC2_CH6 - Ambient air temperature
+#define PIN_TEMP_COMPRESSOR 27  ///< ADC2_CH7 - Compressor body temperature
 
 // =============================================================================
 // PIN DEFINITIONS - Electrical Sensors
 // =============================================================================
-#define PIN_VOLTAGE 27  ///< ADC2_CH7 - ZMPT101B AC voltage sensor
-#define PIN_CURRENT 39  ///< ADC1_CH3 (VN) - ACS712-20A current sensor
+#define PIN_VOLTAGE 33  ///< ADC1_CH5 - ZMPT101B AC voltage sensor
+#define PIN_CURRENT 32  ///< ADC1_CH4 - ACS712-20A current sensor
 
 // =============================================================================
 // PIN DEFINITIONS - Pressure Sensors (Optional)
@@ -134,13 +134,15 @@
 
 // ZMPT101B AC Voltage Sensor
 #define VOLTAGE_SAMPLES 500           ///< Number of samples for RMS calculation
-#define VOLTAGE_SCALE_FACTOR 234.26f  ///< Calibrate with known voltage source
+#define VOLTAGE_SCALE_FACTOR 269.40f  ///< Calibrate with known voltage source
 
-// SCT-013-020 CT Clamp (20A / 1V output, built-in burden resistor)
-#define CT_OUTPUT_VOLTAGE_MAX 1.0f  ///< Max RMS output voltage at rated current
+// ACS712-20A Current Sensor (powered at 3.3V)
+#define CT_OUTPUT_VOLTAGE_MAX 1.32f ///< Max output swing at 20A (20A × 66mV/A)
 #define CT_CURRENT_MAX 20.0f        ///< Rated max current (Amps RMS)
-#define CT_BIAS_VOLTAGE 1.65f       ///< DC bias midpoint from voltage divider (3.3V / 2)
+#define CT_BIAS_VOLTAGE 1.65f       ///< Quiescent output voltage (VCC/2 = 3.3/2)
 #define CURRENT_SAMPLES 500         ///< Number of samples for RMS calculation
+#define CURRENT_NOISE_FLOOR 0.3f    ///< Below this threshold (Amps), report 0
+#define CURRENT_ZERO_SAMPLES 1000   ///< Samples for auto-zero calibration at startup
 
 // Pressure Transducer (0.5-4.5V = 0-500 PSI)
 #define PRESSURE_MIN_VOLTAGE 0.5f
