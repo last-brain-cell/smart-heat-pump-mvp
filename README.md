@@ -13,6 +13,7 @@ Build a prototype IoT monitoring system for a smart heat pump that monitors vari
 - 2 cores, WiFi + Bluetooth built-in
 - Arduino IDE 2.3.7 on macOS for development
 
+
 ### GSM Module
 - **SIM800C Module** (GSM/GPRS, 2G)
 - Development board with onboard voltage regulator
