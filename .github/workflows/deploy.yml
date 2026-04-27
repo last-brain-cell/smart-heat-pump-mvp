@@ -80,7 +80,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script_stop: true
-          envs: INFLUXDB_USER,INFLUXDB_PASSWORD,INFLUXDB_ORG,INFLUXDB_BUCKET,INFLUXDB_RETENTION,INFLUXDB_TOKEN,MQTT_USER,MQTT_PASSWORD,GHCR_OWNER
+          envs: INFLUXDB_USER,INFLUXDB_PASSWORD,INFLUXDB_ORG,INFLUXDB_BUCKET,INFLUXDB_RETENTION,INFLUXDB_TOKEN,MQTT_USER,MQTT_PASSWORD,GHCR_OWNER,DOMAIN,INFLUXDB_DOMAIN,ACME_EMAIL
           script: |
             set -e
             cd ~/heatpump
@@ -96,6 +96,9 @@ jobs:
             INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
             MQTT_USER=${MQTT_USER}
             MQTT_PASSWORD=${MQTT_PASSWORD}
+            DOMAIN=${DOMAIN}
+            INFLUXDB_DOMAIN=${INFLUXDB_DOMAIN}
+            ACME_EMAIL=${ACME_EMAIL}
             EOF
 
             # Pull and restart
@@ -104,7 +107,7 @@ jobs:
 
             # Verify
             sleep 15
-            curl -f http://localhost/api/health || echo "WARNING: Health check failed"
+            docker exec heatpump-backend curl -f http://localhost:8000/api/health || echo "WARNING: Health check failed"
             docker image prune -f
         env:
           INFLUXDB_USER: ${{ secrets.INFLUXDB_USER }}
@@ -116,3 +119,6 @@ jobs:
           MQTT_USER: ${{ secrets.MQTT_USER }}
           MQTT_PASSWORD: ${{ secrets.MQTT_PASSWORD }}
           GHCR_OWNER: ${{ github.repository_owner }}
+          DOMAIN: ${{ secrets.DOMAIN }}
+          INFLUXDB_DOMAIN: ${{ secrets.INFLUXDB_DOMAIN }}
+          ACME_EMAIL: ${{ secrets.ACME_EMAIL }}

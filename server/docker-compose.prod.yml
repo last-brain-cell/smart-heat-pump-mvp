@@ -1,4 +1,28 @@
 services:
+  traefik:
+    image: traefik:v3.1
+    container_name: heatpump-traefik
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - letsencrypt:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - heatpump
+
   mosquitto:
     image: ghcr.io/${GHCR_OWNER}/heatpump-mqtt:latest
     container_name: heatpump-mqtt
@@ -19,8 +43,6 @@ services:
     image: influxdb:2.7-alpine
     container_name: heatpump-influxdb
     restart: unless-stopped
-    ports:
-      - "8086:8086"
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_USER}
@@ -32,6 +54,12 @@ services:
     volumes:
       - influxdb_data:/var/lib/influxdb2
       - influxdb_config:/etc/influxdb2
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.influxdb.rule=Host(`${INFLUXDB_DOMAIN}`)"
+      - "traefik.http.routers.influxdb.entrypoints=websecure"
+      - "traefik.http.routers.influxdb.tls.certresolver=letsencrypt"
+      - "traefik.http.services.influxdb.loadbalancer.server.port=8086"
     networks:
       - heatpump
     healthcheck:
@@ -71,11 +99,15 @@ services:
     image: ghcr.io/${GHCR_OWNER}/heatpump-dashboard:latest
     container_name: heatpump-dashboard
     restart: unless-stopped
-    ports:
-      - "80:80"
     depends_on:
       backend:
         condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dashboard.loadbalancer.server.port=80"
     networks:
       - heatpump
 
@@ -88,3 +120,4 @@ volumes:
   mqtt_log:
   influxdb_data:
   influxdb_config:
+  letsencrypt:
