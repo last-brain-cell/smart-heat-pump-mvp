@@ -1,0 +1,7 @@
+{$DOMAIN} {
+    reverse_proxy dashboard:80
+}
+
+{$INFLUXDB_DOMAIN} {
+    reverse_proxy influxdb:8086
+}

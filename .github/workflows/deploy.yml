@@ -62,13 +62,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy compose file to server
+      - name: Copy files to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: server/docker-compose.prod.yml
+          source: server/docker-compose.prod.yml,server/Caddyfile
           target: ~/heatpump
           strip_components: 1
 
@@ -80,7 +80,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script_stop: true
-          envs: INFLUXDB_USER,INFLUXDB_PASSWORD,INFLUXDB_ORG,INFLUXDB_BUCKET,INFLUXDB_RETENTION,INFLUXDB_TOKEN,MQTT_USER,MQTT_PASSWORD,GHCR_OWNER,DOMAIN,INFLUXDB_DOMAIN,ACME_EMAIL
+          envs: INFLUXDB_USER,INFLUXDB_PASSWORD,INFLUXDB_ORG,INFLUXDB_BUCKET,INFLUXDB_RETENTION,INFLUXDB_TOKEN,MQTT_USER,MQTT_PASSWORD,GHCR_OWNER,DOMAIN,INFLUXDB_DOMAIN
           script: |
             set -e
             cd ~/heatpump
@@ -98,7 +98,6 @@ jobs:
             MQTT_PASSWORD=${MQTT_PASSWORD}
             DOMAIN=${DOMAIN}
             INFLUXDB_DOMAIN=${INFLUXDB_DOMAIN}
-            ACME_EMAIL=${ACME_EMAIL}
             EOF
 
             # Pull and restart
@@ -121,4 +120,3 @@ jobs:
           GHCR_OWNER: ${{ github.repository_owner }}
           DOMAIN: ${{ secrets.DOMAIN }}
           INFLUXDB_DOMAIN: ${{ secrets.INFLUXDB_DOMAIN }}
-          ACME_EMAIL: ${{ secrets.ACME_EMAIL }}
