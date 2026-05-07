@@ -306,14 +306,14 @@ static void handleRescan() {
 void startProvisioningPortal(RuntimeConfig& cfg) {
     Log.println(F("[PROV] Starting AP provisioning portal..."));
     Log.print(F("[PROV] AP SSID: "));
-    Log.println(PROVISION_AP_SSID);
+    Log.println(deviceId);
 
     portalCfg = &cfg;
     portalSubmitted = false;
 
     // AP+STA mode: AP serves the portal, STA enables WiFi scanning
     WiFi.mode(WIFI_AP_STA);
-    WiFi.softAP(PROVISION_AP_SSID);
+    WiFi.softAP(deviceId);
     delay(100);
 
     // Scan for nearby networks

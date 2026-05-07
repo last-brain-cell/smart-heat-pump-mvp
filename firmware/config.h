@@ -20,8 +20,7 @@
 // =============================================================================
 // DEVICE IDENTIFICATION
 // =============================================================================
-/** @brief Unique device identifier - used in MQTT topics and SMS messages */
-#define DEVICE_ID "site1"
+// Device ID is derived at runtime from the ESP32 MAC address (see globals.h)
 
 // =============================================================================
 // SIMULATION MODE
@@ -63,11 +62,11 @@
 // MQTT BROKER SETTINGS — compile-time defaults, overridden by portal config in NVS
 // =============================================================================
 //#define MQTT_BROKER "192.168.1.12"   ///< Local MQTT broker hostname or IP
- #define MQTT_BROKER "heatpump.aquaproducts.in"  ///< Deployed MQTT broker hostname or IP
+#define MQTT_BROKER "hp.iot.aquaproducts.in"  ///< Deployed MQTT broker hostname or IP
 #define MQTT_PORT 1883               ///< MQTT broker port
 #define MQTT_USER "heatpump"         ///< MQTT username
 #define MQTT_PASS "heatpump123"      ///< MQTT password
-#define MQTT_CLIENT_ID DEVICE_ID     ///< MQTT client identifier
+// MQTT client ID is set to deviceId at runtime (see globals.h)
 
 // Validation markers for configuration check
 #define MQTT_BROKER_PLACEHOLDER "your-broker-ip"
@@ -199,7 +198,7 @@
 // =============================================================================
 // MQTT TOPICS
 // =============================================================================
-#define MQTT_TOPIC_BASE "heatpump/" DEVICE_ID
+// MQTT topic base is built at runtime: "heatpump/{deviceId}" (see globals.h)
 
 // =============================================================================
 // MESSAGE BUFFER SIZES

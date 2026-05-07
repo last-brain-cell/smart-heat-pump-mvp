@@ -20,7 +20,7 @@
  * @return Number of characters written
  */
 static size_t buildTopic(const char* suffix, char* buffer, size_t bufferSize) {
-    return snprintf(buffer, bufferSize, "%s%s", MQTT_TOPIC_BASE, suffix);
+    return snprintf(buffer, bufferSize, "%s%s", mqttTopicBase, suffix);
 }
 
 // =============================================================================
@@ -51,7 +51,7 @@ bool connectMQTT() {
     buildTopic("/status/online", willTopic, sizeof(willTopic));
 
     bool connected = mqtt.connect(
-        MQTT_CLIENT_ID,
+        deviceId,
         runtimeCfg.mqttUser,
         runtimeCfg.mqttPass,
         willTopic,
@@ -100,7 +100,7 @@ bool publishStatus(bool online) {
 size_t buildJsonPayload(const SystemData& data, char* buffer, size_t bufferSize) {
     StaticJsonDocument<JSON_BUFFER_SIZE> doc;
 
-    doc["device"] = DEVICE_ID;
+    doc["device"] = deviceId;
     doc["timestamp"] = data.readingTime;
     doc["version"] = FIRMWARE_VERSION;
 

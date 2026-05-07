@@ -25,6 +25,16 @@
 #include "log_capture.h"
 
 // =============================================================================
+// DEVICE IDENTITY (derived from ESP32 MAC at boot)
+// =============================================================================
+
+/** @brief Unique device ID derived from MAC address, e.g. "HP-AABBCCDD" */
+extern char deviceId[12];
+
+/** @brief MQTT topic prefix, e.g. "heatpump/HP-AABBCCDD" */
+extern char mqttTopicBase[32];
+
+// =============================================================================
 // GLOBAL OBJECT DECLARATIONS
 // =============================================================================
 

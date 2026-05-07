@@ -17,7 +17,7 @@
 // PORTAL CONFIGURATION
 // =============================================================================
 
-#define PROVISION_AP_SSID    "HeatPump-Setup"
+// AP SSID is set dynamically to deviceId (e.g. "HP-AABBCCDD") in provision.cpp
 #define PROVISION_TIMEOUT_MS 180000UL   ///< 3 minutes portal timeout
 #define PROVISION_NVS_NS     "hpcfg"    ///< NVS namespace for config
 

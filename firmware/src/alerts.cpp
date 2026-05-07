@@ -164,7 +164,7 @@ size_t formatAlertMessage(AlertType type, AlertLevel level, float value,
             getAlertTypeName(type),
             getAlertLevelName(level),
             value, unit,
-            DEVICE_ID
+            deviceId
         );
     }
 
@@ -176,7 +176,7 @@ size_t formatAlertMessage(AlertType type, AlertLevel level, float value,
         getAlertTypeName(type),
         getAlertLevelName(level),
         value, unit,
-        DEVICE_ID
+        deviceId
     );
 }
 

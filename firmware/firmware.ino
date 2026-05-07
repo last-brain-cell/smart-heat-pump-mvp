@@ -52,6 +52,8 @@
 // =============================================================================
 
 LogCapture Log(Serial);
+char deviceId[12] = "";
+char mqttTopicBase[32] = "";
 TinyGsm modem(Serial2);
 TinyGsmClient gsmClient(modem);
 GSMState gsmState = GSM_UNINITIALIZED;
@@ -135,7 +137,7 @@ static void printStartupBanner() {
     Log.println(FIRMWARE_VERSION);
     Log.println(F("====================================="));
     Log.print(F("Device ID: "));
-    Log.println(DEVICE_ID);
+    Log.println(deviceId);
     Log.print(F("Mode: "));
     Log.println(SIMULATION_MODE ? "Simulation" : "Live");
     Log.print(F("Free Heap: "));
@@ -151,6 +153,11 @@ void setup() {
     // Initialize Serial for debugging
     Log.begin(115200);
     delay(1000);
+
+    // Derive unique device ID from ESP32 MAC address
+    uint64_t mac = ESP.getEfuseMac();
+    snprintf(deviceId, sizeof(deviceId), "HP-%08X", (uint32_t)(mac >> 16));
+    snprintf(mqttTopicBase, sizeof(mqttTopicBase), "heatpump/%s", deviceId);
 
     printStartupBanner();
     validateConfiguration();
@@ -197,7 +204,7 @@ void setup() {
 //                 "Device: %s\n"
 //                 "Version: %s\n"
 //                 "Mode: %s",
-//                 DEVICE_ID,
+//                 deviceId,
 //                 FIRMWARE_VERSION,
 //                 SIMULATION_MODE ? "Simulation" : "Live"
 //             );
