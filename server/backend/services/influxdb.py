@@ -80,6 +80,9 @@ class InfluxDBService:
         """
         Write sensor data point to InfluxDB.
 
+        Supports both v1 (single-phase) and v2 (3-phase PZEM-004T) payloads.
+        v2 is detected by the presence of a 'phase1' key in the electrical dict.
+
         Args:
             device_id: Unique device identifier
             data: Sensor data dictionary from MQTT payload
@@ -89,6 +92,11 @@ class InfluxDBService:
         """
         try:
             point = Point("sensor_reading").tag("device_id", device_id)
+
+            # Tag firmware version if present
+            firmware_version = data.get("firmware_version")
+            if firmware_version is not None:
+                point.tag("firmware_version", str(firmware_version))
 
             # Add temperature fields
             temps = data.get("temperature", {})
@@ -101,14 +109,33 @@ class InfluxDBService:
             if temps.get("compressor") is not None:
                 point.field("temp_compressor", float(temps["compressor"]))
 
-            # Add electrical fields
+            # Add electrical fields - detect v2 (3-phase) vs v1 (single-phase)
             elec = data.get("electrical", {})
-            if elec.get("voltage") is not None:
-                point.field("voltage", float(elec["voltage"]))
-            if elec.get("current") is not None:
-                point.field("current", float(elec["current"]))
-            if elec.get("power") is not None:
-                point.field("power", float(elec["power"]))
+            if "phase1" in elec:
+                # v2 format: 3-phase PZEM-004T readings
+                for phase_name in ("phase1", "phase2", "phase3"):
+                    phase_data = elec.get(phase_name, {})
+                    if phase_data:
+                        if phase_data.get("voltage") is not None:
+                            point.field(f"{phase_name}_voltage", float(phase_data["voltage"]))
+                        if phase_data.get("current") is not None:
+                            point.field(f"{phase_name}_current", float(phase_data["current"]))
+                        if phase_data.get("power") is not None:
+                            point.field(f"{phase_name}_power", float(phase_data["power"]))
+                        if phase_data.get("energy") is not None:
+                            point.field(f"{phase_name}_energy", float(phase_data["energy"]))
+                        if phase_data.get("frequency") is not None:
+                            point.field(f"{phase_name}_frequency", float(phase_data["frequency"]))
+                        if phase_data.get("power_factor") is not None:
+                            point.field(f"{phase_name}_pf", float(phase_data["power_factor"]))
+            else:
+                # v1 format: single-phase readings
+                if elec.get("voltage") is not None:
+                    point.field("voltage", float(elec["voltage"]))
+                if elec.get("current") is not None:
+                    point.field("current", float(elec["current"]))
+                if elec.get("power") is not None:
+                    point.field("power", float(elec["power"]))
 
             # Add pressure fields
             pressure = data.get("pressure", {})
@@ -214,6 +241,7 @@ class InfluxDBService:
                     return {
                         "time": record.get_time(),
                         "device_id": device_id,
+                        "firmware_version": record.values.get("firmware_version"),
                         "temp_inlet": record.values.get("temp_inlet"),
                         "temp_outlet": record.values.get("temp_outlet"),
                         "temp_ambient": record.values.get("temp_ambient"),
@@ -224,6 +252,24 @@ class InfluxDBService:
                         "pressure_high": record.values.get("pressure_high"),
                         "pressure_low": record.values.get("pressure_low"),
                         "compressor_running": record.values.get("compressor_running"),
+                        "phase1_voltage": record.values.get("phase1_voltage"),
+                        "phase1_current": record.values.get("phase1_current"),
+                        "phase1_power": record.values.get("phase1_power"),
+                        "phase1_energy": record.values.get("phase1_energy"),
+                        "phase1_frequency": record.values.get("phase1_frequency"),
+                        "phase1_pf": record.values.get("phase1_pf"),
+                        "phase2_voltage": record.values.get("phase2_voltage"),
+                        "phase2_current": record.values.get("phase2_current"),
+                        "phase2_power": record.values.get("phase2_power"),
+                        "phase2_energy": record.values.get("phase2_energy"),
+                        "phase2_frequency": record.values.get("phase2_frequency"),
+                        "phase2_pf": record.values.get("phase2_pf"),
+                        "phase3_voltage": record.values.get("phase3_voltage"),
+                        "phase3_current": record.values.get("phase3_current"),
+                        "phase3_power": record.values.get("phase3_power"),
+                        "phase3_energy": record.values.get("phase3_energy"),
+                        "phase3_frequency": record.values.get("phase3_frequency"),
+                        "phase3_pf": record.values.get("phase3_pf"),
                     }
             return None
 
@@ -265,6 +311,7 @@ class InfluxDBService:
                         {
                             "time": record.get_time(),
                             "device_id": device_id,
+                            "firmware_version": record.values.get("firmware_version"),
                             "temp_inlet": record.values.get("temp_inlet"),
                             "temp_outlet": record.values.get("temp_outlet"),
                             "temp_ambient": record.values.get("temp_ambient"),
@@ -275,6 +322,24 @@ class InfluxDBService:
                             "pressure_high": record.values.get("pressure_high"),
                             "pressure_low": record.values.get("pressure_low"),
                             "compressor_running": record.values.get("compressor_running"),
+                            "phase1_voltage": record.values.get("phase1_voltage"),
+                            "phase1_current": record.values.get("phase1_current"),
+                            "phase1_power": record.values.get("phase1_power"),
+                            "phase1_energy": record.values.get("phase1_energy"),
+                            "phase1_frequency": record.values.get("phase1_frequency"),
+                            "phase1_pf": record.values.get("phase1_pf"),
+                            "phase2_voltage": record.values.get("phase2_voltage"),
+                            "phase2_current": record.values.get("phase2_current"),
+                            "phase2_power": record.values.get("phase2_power"),
+                            "phase2_energy": record.values.get("phase2_energy"),
+                            "phase2_frequency": record.values.get("phase2_frequency"),
+                            "phase2_pf": record.values.get("phase2_pf"),
+                            "phase3_voltage": record.values.get("phase3_voltage"),
+                            "phase3_current": record.values.get("phase3_current"),
+                            "phase3_power": record.values.get("phase3_power"),
+                            "phase3_energy": record.values.get("phase3_energy"),
+                            "phase3_frequency": record.values.get("phase3_frequency"),
+                            "phase3_pf": record.values.get("phase3_pf"),
                         }
                     )
 

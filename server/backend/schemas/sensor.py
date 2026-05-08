@@ -27,6 +27,23 @@ class ElectricalReading(BaseModel):
     power: Optional[float] = Field(None, description="Power consumption in Watts")
 
 
+class PhaseReading(BaseModel):
+    """Single phase electrical data from PZEM-004T."""
+    voltage: Optional[float] = Field(None, description="AC voltage (V)")
+    current: Optional[float] = Field(None, description="Current (A)")
+    power: Optional[float] = Field(None, description="Power (W)")
+    energy: Optional[float] = Field(None, description="Cumulative energy (kWh)")
+    frequency: Optional[float] = Field(None, description="Frequency (Hz)")
+    power_factor: Optional[float] = Field(None, description="Power factor (0-1)")
+
+
+class ElectricalReadingV2(BaseModel):
+    """3-phase electrical readings from v2 firmware."""
+    phase1: Optional[PhaseReading] = None
+    phase2: Optional[PhaseReading] = None
+    phase3: Optional[PhaseReading] = None
+
+
 class PressureReading(BaseModel):
     """Pressure sensor readings in PSI."""
 
@@ -66,6 +83,7 @@ class SensorDataResponse(BaseModel):
 
     time: datetime = Field(..., description="Timestamp of the reading")
     device_id: str = Field(..., description="Device identifier")
+    firmware_version: Optional[str] = Field(None, description="Firmware version (v1 or v2)")
     temp_inlet: Optional[float] = None
     temp_outlet: Optional[float] = None
     temp_ambient: Optional[float] = None
@@ -77,11 +95,34 @@ class SensorDataResponse(BaseModel):
     pressure_low: Optional[float] = None
     compressor_running: Optional[bool] = None
 
+    # Per-phase fields (v2 firmware, 3-phase PZEM-004T)
+    phase1_voltage: Optional[float] = None
+    phase1_current: Optional[float] = None
+    phase1_power: Optional[float] = None
+    phase1_energy: Optional[float] = None
+    phase1_frequency: Optional[float] = None
+    phase1_pf: Optional[float] = None
+
+    phase2_voltage: Optional[float] = None
+    phase2_current: Optional[float] = None
+    phase2_power: Optional[float] = None
+    phase2_energy: Optional[float] = None
+    phase2_frequency: Optional[float] = None
+    phase2_pf: Optional[float] = None
+
+    phase3_voltage: Optional[float] = None
+    phase3_current: Optional[float] = None
+    phase3_power: Optional[float] = None
+    phase3_energy: Optional[float] = None
+    phase3_frequency: Optional[float] = None
+    phase3_pf: Optional[float] = None
+
     class Config:
         json_schema_extra = {
             "example": {
                 "time": "2024-01-15T10:30:00Z",
                 "device_id": "site1",
+                "firmware_version": "v1",
                 "temp_inlet": 45.2,
                 "temp_outlet": 50.1,
                 "temp_ambient": 25.0,
