@@ -5,6 +5,8 @@ Schemas module - Pydantic models for request/response validation.
 from .sensor import (
     TemperatureReading,
     ElectricalReading,
+    PhaseReading,
+    ElectricalReadingV2,
     PressureReading,
     SystemStatus,
     SensorDataPayload,
@@ -18,6 +20,8 @@ __all__ = [
     # Sensor schemas
     "TemperatureReading",
     "ElectricalReading",
+    "PhaseReading",
+    "ElectricalReadingV2",
     "PressureReading",
     "SystemStatus",
     "SensorDataPayload",

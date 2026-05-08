@@ -288,8 +288,64 @@ body {
 
 .readings-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 12px;
+}
+
+.card-wide {
+    grid-column: 1 / -1;
+}
+
+/* 3-phase grid layout */
+
+.phase-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.phase-column {
+    border-right: 1px solid var(--color-border);
+    padding-right: 1rem;
+}
+
+.phase-column:last-child {
+    border-right: none;
+    padding-right: 0;
+}
+
+.phase-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-tertiary);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.phase-avg {
+    background: var(--color-accent-soft);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    border-right: none;
+}
+
+.phase-avg .phase-title {
+    color: var(--color-accent);
+}
+
+.phase-column .reading {
+    padding: 4px 0;
+}
+
+.phase-column .reading-value-group .value {
+    font-size: 15px;
+}
+
+.phase-column .reading-label {
+    font-size: 12px;
 }
 
 .card {
@@ -406,6 +462,14 @@ body {
     .device-grid {
         grid-template-columns: 1fr;
     }
+
+    .phase-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .phase-column:nth-child(2) {
+        border-right: none;
+    }
 }
 
 @media (max-width: 480px) {
@@ -419,5 +483,21 @@ body {
 
     .stat-card {
         padding: 14px 16px;
+    }
+
+    .phase-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .phase-column {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        padding-right: 0;
+        padding-bottom: 10px;
+    }
+
+    .phase-column:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
     }
 }

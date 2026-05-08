@@ -70,14 +70,14 @@
                                 <span class="reading-unit">&deg;C</span>
                             </div>
                         </div>
-                        <div class="reading">
+                        <div class="reading v1-only" id="ambient-row">
                             <span class="reading-label">Ambient</span>
                             <div class="reading-value-group">
                                 <span class="value" id="temp-ambient">--</span>
                                 <span class="reading-unit">&deg;C</span>
                             </div>
                         </div>
-                        <div class="reading">
+                        <div class="reading v1-only" id="compressor-row">
                             <span class="reading-label">Compressor</span>
                             <div class="reading-value-group">
                                 <span class="value" id="temp-compressor">--</span>
@@ -87,30 +87,55 @@
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card card-wide">
                     <div class="card-header">
                         <svg class="card-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
                         <h3>Electrical</h3>
+                        <span class="section-tag" id="electrical-mode">--</span>
                     </div>
                     <div class="card-body">
-                        <div class="reading">
-                            <span class="reading-label">Voltage</span>
-                            <div class="reading-value-group">
-                                <span class="value" id="voltage">--</span>
-                                <span class="reading-unit">V</span>
+                        <div class="phase-grid">
+                            <div class="phase-column">
+                                <h4 class="phase-title">Phase 1</h4>
+                                <div class="reading"><span class="reading-label">Voltage</span><div class="reading-value-group"><span class="value" id="p1-voltage">--</span><span class="reading-unit">V</span></div></div>
+                                <div class="reading"><span class="reading-label">Current</span><div class="reading-value-group"><span class="value" id="p1-current">--</span><span class="reading-unit">A</span></div></div>
+                                <div class="reading"><span class="reading-label">Power</span><div class="reading-value-group"><span class="value" id="p1-power">--</span><span class="reading-unit">W</span></div></div>
+                                <div class="reading"><span class="reading-label">PF</span><div class="reading-value-group"><span class="value" id="p1-pf">--</span></div></div>
+                                <div class="reading"><span class="reading-label">Frequency</span><div class="reading-value-group"><span class="value" id="p1-freq">--</span><span class="reading-unit">Hz</span></div></div>
+                                <div class="reading"><span class="reading-label">Energy</span><div class="reading-value-group"><span class="value" id="p1-energy">--</span><span class="reading-unit">kWh</span></div></div>
                             </div>
-                        </div>
-                        <div class="reading">
-                            <span class="reading-label">Current</span>
-                            <div class="reading-value-group">
-                                <span class="value" id="current">--</span>
-                                <span class="reading-unit">A</span>
+                            <div class="phase-column">
+                                <h4 class="phase-title">Phase 2</h4>
+                                <div class="reading"><span class="reading-label">Voltage</span><div class="reading-value-group"><span class="value" id="p2-voltage">--</span><span class="reading-unit">V</span></div></div>
+                                <div class="reading"><span class="reading-label">Current</span><div class="reading-value-group"><span class="value" id="p2-current">--</span><span class="reading-unit">A</span></div></div>
+                                <div class="reading"><span class="reading-label">Power</span><div class="reading-value-group"><span class="value" id="p2-power">--</span><span class="reading-unit">W</span></div></div>
+                                <div class="reading"><span class="reading-label">PF</span><div class="reading-value-group"><span class="value" id="p2-pf">--</span></div></div>
+                                <div class="reading"><span class="reading-label">Frequency</span><div class="reading-value-group"><span class="value" id="p2-freq">--</span><span class="reading-unit">Hz</span></div></div>
+                                <div class="reading"><span class="reading-label">Energy</span><div class="reading-value-group"><span class="value" id="p2-energy">--</span><span class="reading-unit">kWh</span></div></div>
+                            </div>
+                            <div class="phase-column">
+                                <h4 class="phase-title">Phase 3</h4>
+                                <div class="reading"><span class="reading-label">Voltage</span><div class="reading-value-group"><span class="value" id="p3-voltage">--</span><span class="reading-unit">V</span></div></div>
+                                <div class="reading"><span class="reading-label">Current</span><div class="reading-value-group"><span class="value" id="p3-current">--</span><span class="reading-unit">A</span></div></div>
+                                <div class="reading"><span class="reading-label">Power</span><div class="reading-value-group"><span class="value" id="p3-power">--</span><span class="reading-unit">W</span></div></div>
+                                <div class="reading"><span class="reading-label">PF</span><div class="reading-value-group"><span class="value" id="p3-pf">--</span></div></div>
+                                <div class="reading"><span class="reading-label">Frequency</span><div class="reading-value-group"><span class="value" id="p3-freq">--</span><span class="reading-unit">Hz</span></div></div>
+                                <div class="reading"><span class="reading-label">Energy</span><div class="reading-value-group"><span class="value" id="p3-energy">--</span><span class="reading-unit">kWh</span></div></div>
+                            </div>
+                            <div class="phase-column phase-avg">
+                                <h4 class="phase-title">3-Phase Avg</h4>
+                                <div class="reading"><span class="reading-label">Avg Voltage</span><div class="reading-value-group"><span class="value" id="avg-voltage">--</span><span class="reading-unit">V</span></div></div>
+                                <div class="reading"><span class="reading-label">Total Current</span><div class="reading-value-group"><span class="value" id="total-current">--</span><span class="reading-unit">A</span></div></div>
+                                <div class="reading"><span class="reading-label">Total Power</span><div class="reading-value-group"><span class="value" id="total-power">--</span><span class="reading-unit">W</span></div></div>
+                                <div class="reading"><span class="reading-label">Avg PF</span><div class="reading-value-group"><span class="value" id="avg-pf">--</span></div></div>
+                                <div class="reading"><span class="reading-label">Avg Frequency</span><div class="reading-value-group"><span class="value" id="avg-freq">--</span><span class="reading-unit">Hz</span></div></div>
+                                <div class="reading"><span class="reading-label">Total Energy</span><div class="reading-value-group"><span class="value" id="total-energy">--</span><span class="reading-unit">kWh</span></div></div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card v1-only" id="pressure-card">
                     <div class="card-header">
                         <svg class="card-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                         <h3>Pressure</h3>

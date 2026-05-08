@@ -43,6 +43,31 @@ class DeviceStatusResponse(BaseModel):
     # Status
     compressor_running: Optional[bool] = Field(None, description="Compressor state")
 
+    # Firmware version
+    firmware_version: Optional[str] = Field(None, description="Firmware version (v1 or v2)")
+
+    # Per-phase electrical readings (v2 firmware, 3-phase PZEM-004T)
+    phase1_voltage: Optional[float] = None
+    phase1_current: Optional[float] = None
+    phase1_power: Optional[float] = None
+    phase1_energy: Optional[float] = None
+    phase1_frequency: Optional[float] = None
+    phase1_pf: Optional[float] = None
+
+    phase2_voltage: Optional[float] = None
+    phase2_current: Optional[float] = None
+    phase2_power: Optional[float] = None
+    phase2_energy: Optional[float] = None
+    phase2_frequency: Optional[float] = None
+    phase2_pf: Optional[float] = None
+
+    phase3_voltage: Optional[float] = None
+    phase3_current: Optional[float] = None
+    phase3_power: Optional[float] = None
+    phase3_energy: Optional[float] = None
+    phase3_frequency: Optional[float] = None
+    phase3_pf: Optional[float] = None
+
     class Config:
         json_schema_extra = {
             "example": {
